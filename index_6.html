@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PotatoPowered — an AI that lives on your device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14171F;
+    --surface: #1B1F2B;
+    --surface-raised: #232838;
+    --line: #2B3040;
+    --ink: #E8E6DE;
+    --ink-dim: #9298AC;
+    --amber: #E8A33D;
+    --amber-dim: #6b5730;
+    --teal: #5FA8A0;
+    --error: #E2665F;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #1c2130 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+  }
+
+  /* ---- Auth screen ---- */
+  .auth-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .auth-card{
+    width:100%;
+    max-width:360px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:32px 28px;
+  }
+  .brand-mini{ display:flex; align-items:baseline; gap:10px; margin-bottom:10px; }
+  .brand-mini .dot{ width:8px; height:8px; border-radius:50%; background:var(--amber); display:inline-block; }
+  .brand-mini h1{ font-family:'Fraunces', serif; font-weight:600; font-size:24px; margin:0; letter-spacing:-0.01em; }
+  .auth-sub{ font-size:13px; color:var(--ink-dim); line-height:1.6; margin:0 0 22px; }
+  .auth-tabs{ display:flex; gap:6px; background:var(--surface-raised); border:1px solid var(--line); border-radius:8px; padding:4px; margin-bottom:18px; }
+  .auth-tab{
+    flex:1;
+    background:none;
+    border:none;
+    color:var(--ink-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    padding:8px 6px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .auth-tab.active{ background:var(--amber); color:#1a1608; }
+  .google-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:7px;
+    padding:10px;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    cursor:pointer;
+    margin-bottom:18px;
+  }
+  .google-btn:hover{ border-color:var(--ink-dim); }
+  .google-btn:disabled{ opacity:0.6; cursor:not-allowed; }
+  .auth-divider{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:0 0 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-dim);
+  }
+  .auth-divider::before, .auth-divider::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  #authForm{ display:flex; flex-direction:column; gap:10px; }
+  #authForm input{
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:7px;
+    padding:11px 12px;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    outline:none;
+    width:100%;
+  }
+  #authForm input:focus{ border-color:var(--amber-dim); }
+  .auth-submit{
+    background:var(--amber);
+    color:#1a1608;
+    border:none;
+    border-radius:7px;
+    padding:11px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .auth-submit:disabled{ background:var(--amber-dim); color:#8a7a4d; cursor:not-allowed; }
+  .auth-error{
+    color:var(--error);
+    font-size:12.5px;
+    margin-top:14px;
+    line-height:1.5;
+    min-height:1px;
+  }
+  .auth-config-warning{
+    color:var(--error);
+    font-size:12px;
+    line-height:1.6;
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+
+  /* ---- App shell ---- */
+  .app-screen{ display:flex; flex-direction:column; min-height:100vh; }
+
+  /* ---- Sidebar ---- */
+  .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:30; display:none; }
+  .backdrop.show{ display:block; }
+  .sidebar{
+    position:fixed; top:0; left:0; bottom:0; width:280px;
+    background:var(--surface);
+    border-right:1px solid var(--line);
+    transform:translateX(-100%);
+    transition:transform 0.22s ease;
+    z-index:40;
+    display:flex;
+    flex-direction:column;
+  }
+  .sidebar.open{ transform:translateX(0); }
+  .sidebar-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 16px;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-dim);
+  }
+  .icon-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:5px;
+    width:25px; height:25px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px;
+    line-height:1;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ color:var(--ink); border-color:var(--amber); }
+  .convo-list{ overflow-y:auto; flex:1; padding:8px; }
+  .convo-row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px;
+    padding:9px 10px;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:13px;
+    color:var(--ink-dim);
+    border:1px solid transparent;
+  }
+  .convo-row:hover{ background:var(--surface-raised); color:var(--ink); }
+  .convo-row.active{ background:var(--surface-raised); color:var(--ink); border-color:var(--amber-dim); }
+  .convo-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .convo-actions{ display:none; gap:4px; }
+  .convo-row:hover .convo-actions{ display:flex; }
+  .convo-rename-input{
+    flex:1;
+    background:var(--bg);
+    border:1px solid var(--amber-dim);
+    color:var(--ink);
+    border-radius:5px;
+    padding:3px 6px;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+
+  /* ---- Header ---- */
+  header{
+    padding:24px 24px 18px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    max-width:760px;
+    width:100%;
+    margin:0 auto;
+  }
+  .header-left{ display:flex; align-items:center; gap:12px; }
+  .panel-toggle{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:6px;
+    width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .panel-toggle:hover{ color:var(--ink); border-color:var(--ink-dim); }
+  .header-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .brand{display:flex; align-items:baseline; gap:12px;}
+  .brand h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--ink-dim);
+    display:inline-block;
+    position:relative;
+    top:-2px;
+  }
+  .dot.live{ background:var(--amber); animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(232,163,61,0.55); }
+    50%{ box-shadow:0 0 0 6px rgba(232,163,61,0); }
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; }
+  .user-email{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+    max-width:180px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* ---- Model bar ---- */
+  .modelbar{
+    max-width:760px;
+    width:100%;
+    margin:0 auto;
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+  }
+  select{
+    background:var(--surface-raised);
+    color:var(--ink);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    cursor:pointer;
+  }
+  select:disabled{ opacity:0.5; cursor:not-allowed; }
+  .loadbtn{
+    background:var(--amber);
+    color:#1a1608;
+    border:none;
+    border-radius:6px;
+    padding:7px 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .loadbtn:disabled{ background:var(--amber-dim); color:#8a7a4d; cursor:not-allowed; }
+  .progress-wrap{
+    flex:1 1 160px;
+    min-width:140px;
+    height:6px;
+    background:var(--surface-raised);
+    border-radius:4px;
+    overflow:hidden;
+    display:none;
+  }
+  .progress-wrap.show{ display:block; }
+  .progress-bar{
+    height:100%; width:0%;
+    background:var(--amber);
+    transition:width 0.2s ease;
+  }
+
+  /* ---- Chat ---- */
+  main{
+    flex:1;
+    max-width:760px;
+    width:100%;
+    margin:0 auto;
+    padding:12px 24px 140px;
+    overflow-y:auto;
+  }
+  .msg{
+    padding:16px 0;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    gap:14px;
+  }
+  .msg:last-child{ border-bottom:none; }
+  .role{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-dim);
+    width:64px;
+    flex-shrink:0;
+    padding-top:3px;
+  }
+  .msg.user .role{ color:var(--teal); }
+  .msg.assistant .role{ color:var(--amber); }
+  .bubble{ line-height:1.6; font-size:15px; white-space:pre-wrap; }
+  .system-note{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    text-align:center;
+    padding:40px 20px;
+    line-height:1.8;
+  }
+  .system-note b{ color:var(--ink); }
+
+  /* ---- Input dock ---- */
+  .dock{
+    position:fixed;
+    bottom:0; left:0; right:0;
+    background:linear-gradient(180deg, transparent, var(--bg) 30%);
+    padding:24px 24px 22px;
+    display:flex;
+    justify-content:center;
+  }
+  .dockinner{
+    max-width:760px;
+    width:100%;
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px 10px 10px 16px;
+  }
+  textarea{
+    flex:1;
+    background:none;
+    border:none;
+    outline:none;
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    resize:none;
+    max-height:140px;
+    line-height:1.5;
+    padding:6px 0;
+  }
+  textarea::placeholder{ color:var(--ink-dim); }
+  .send{
+    background:var(--amber);
+    color:#1a1608;
+    border:none;
+    border-radius:7px;
+    width:38px; height:38px;
+    flex-shrink:0;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .send:disabled{ background:var(--amber-dim); color:#8a7a4d; cursor:not-allowed; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="brand-mini"><span class="dot"></span><h1>PotatoPowered</h1></div>
+    <p class="auth-sub">Sign in to start chatting. Your account keeps your conversations tied to you on this browser.</p>
+
+    <button type="button" class="google-btn" id="googleBtn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.94v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.97H.94A9 9 0 0 0 0 9c0 1.45.35 2.83.94 4.03l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .94 4.97l3.01 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+      Continue with Google
+    </button>
+    <div class="auth-divider"><span>or continue with email</span></div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-mode="signin" id="tabSignin" type="button">Sign in</button>
+      <button class="auth-tab" data-mode="signup" id="tabSignup" type="button">Create account</button>
+    </div>
+
+    <form id="authForm">
+      <input type="email" id="authEmail" placeholder="Email" required autocomplete="email">
+      <input type="password" id="authPassword" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <button type="submit" class="auth-submit" id="authSubmit">Sign in</button>
+    </form>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-config-warning" id="authConfigWarning" style="display:none;">
+      <b>Firebase isn't configured yet.</b> Replace the <code>firebaseConfig</code> placeholder near the top of the script with your own project's config to enable sign-in.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SCREEN ============ -->
+<div class="app-screen" id="appScreen" style="display:none;">
+
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span>Conversations</span>
+      <button class="icon-btn" id="newConvoBtn" title="New conversation">+</button>
+    </div>
+    <div class="convo-list" id="convoList"></div>
+  </aside>
+
+  <header>
+    <div class="header-left">
+      <button class="panel-toggle" id="panelToggle" title="Conversations" aria-label="Toggle conversations panel">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2.5" width="15" height="13" rx="2"/><line x1="6.5" y1="2.5" x2="6.5" y2="15.5"/></svg>
+      </button>
+      <div class="brand">
+        <span class="dot" id="statusDot"></span>
+        <h1>PotatoPowered</h1>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="user-chip">
+        <span class="user-email" id="userEmail"></span>
+        <button class="icon-btn" id="signOutBtn" title="Sign out">⏻</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="modelbar">
+    <span>model</span>
+    <select id="modelSelect">
+      <option value="SmolLM2-360M-Instruct-q4f16_1-MLC">SmolLM2 360M — fastest, ~380MB</option>
+      <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" selected>Llama 3.2 1B — balanced, ~900MB</option>
+      <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">Llama 3.2 3B — strongest, ~2.3GB</option>
+      <optgroup label="Needs a dedicated GPU (~5GB VRAM)">
+        <option value="Llama-3.1-8B-Instruct-q4f16_1-MLC">Llama 3.1 8B — most capable overall</option>
+        <option value="DeepSeek-R1-Distill-Llama-8B-q4f16_1-MLC">DeepSeek R1 Distill 8B — best at reasoning/math</option>
+        <option value="Hermes-3-Llama-3.1-8B-q4f16_1-MLC">Hermes 3 Llama 8B — best instruction-following</option>
+      </optgroup>
+    </select>
+    <button class="loadbtn" id="loadBtn">Load model</button>
+    <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+  </div>
+
+  <main id="chatWindow">
+    <div class="system-note" id="systemNote">
+      <b>Nothing has loaded yet.</b><br>
+      Pick a model above and hit "Load model." It downloads once into your browser's
+      cache and then runs fully offline, on your CPU/GPU — no server involved,
+      ever. First load takes a minute or two depending on model size and connection.
+    </div>
+  </main>
+
+  <div class="dock">
+    <div class="dockinner">
+      <textarea id="input" rows="1" placeholder="Load a model to start chatting…" disabled></textarea>
+      <button class="send" id="sendBtn" disabled title="Send">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+// ======================================================================
+// TODO: replace with YOUR OWN Firebase project's config.
+// Firebase console → Project settings → General → Your apps → SDK setup.
+// This is safe to make public — Firebase web config is not a secret.
+// ======================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDhx1Na5041oNb2QD-y1keHjM-VPNFQAaw",
+  authDomain: "ai-website-production.firebaseapp.com",
+  projectId: "ai-website-production",
+  storageBucket: "ai-website-production.firebasestorage.app",
+  messagingSenderId: "516316894401",
+  appId: "1:516316894401:web:1bbbffdf35fee70f6ef040",
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
+// ---- DOM refs: auth screen ----
+const authScreen = document.getElementById('authScreen');
+const appScreen = document.getElementById('appScreen');
+const authForm = document.getElementById('authForm');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authSubmit = document.getElementById('authSubmit');
+const authError = document.getElementById('authError');
+const authConfigWarning = document.getElementById('authConfigWarning');
+const tabSignin = document.getElementById('tabSignin');
+const tabSignup = document.getElementById('tabSignup');
+const googleBtn = document.getElementById('googleBtn');
+const userEmailEl = document.getElementById('userEmail');
+const signOutBtn = document.getElementById('signOutBtn');
+
+// ---- DOM refs: app screen ----
+const modelSelect = document.getElementById('modelSelect');
+const loadBtn = document.getElementById('loadBtn');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const chatWindow = document.getElementById('chatWindow');
+const systemNote = document.getElementById('systemNote');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const statusDot = document.getElementById('statusDot');
+const sidebar = document.getElementById('sidebar');
+const backdrop = document.getElementById('backdrop');
+const panelToggle = document.getElementById('panelToggle');
+const convoList = document.getElementById('convoList');
+const newConvoBtn = document.getElementById('newConvoBtn');
+
+let engine = null;
+let cpuGenerator = null;
+let engineMode = 'webgpu';
+let forceCpuMode = false;
+let generating = false;
+let currentUser = null;
+let conversations = [];
+let activeId = null;
+let authMode = 'signin';
+
+if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+  authConfigWarning.style.display = 'block';
+}
+
+// ======================================================================
+// Auth
+// ======================================================================
+function authErrorMessage(err) {
+  const map = {
+    'auth/email-already-in-use': "That email already has an account — try signing in instead.",
+    'auth/invalid-email': "That email address doesn't look right.",
+    'auth/weak-password': "Password should be at least 6 characters.",
+    'auth/user-not-found': "No account found with that email.",
+    'auth/wrong-password': "Incorrect password.",
+    'auth/invalid-credential': "Incorrect email or password.",
+    'auth/missing-password': "Enter a password.",
+    'auth/too-many-requests': "Too many attempts — wait a moment and try again.",
+    'auth/network-request-failed': "Network error — check your connection.",
+    'auth/popup-closed-by-user': "Sign-in was closed before finishing — try again.",
+    'auth/popup-blocked': "Your browser blocked the sign-in popup — allow popups for this site and try again.",
+    'auth/cancelled-popup-request': "Sign-in was interrupted — try again.",
+    'auth/account-exists-with-different-credential': "That email is already linked to a different sign-in method.",
+    'auth/unauthorized-domain': "This domain isn't authorized in Firebase yet — add it under Authentication → Settings → Authorized domains.",
+  };
+  return map[err.code] || (err.message || "Something went wrong.");
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  tabSignin.classList.toggle('active', mode === 'signin');
+  tabSignup.classList.toggle('active', mode === 'signup');
+  authSubmit.textContent = mode === 'signin' ? 'Sign in' : 'Create account';
+  authPassword.autocomplete = mode === 'signin' ? 'current-password' : 'new-password';
+  authError.textContent = '';
+}
+tabSignin.addEventListener('click', () => setAuthMode('signin'));
+tabSignup.addEventListener('click', () => setAuthMode('signup'));
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  authError.textContent = '';
+  authSubmit.disabled = true;
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+  try {
+    if (authMode === 'signin') {
+      await signInWithEmailAndPassword(auth, email, password);
+    } else {
+      await createUserWithEmailAndPassword(auth, email, password);
+    }
+    authForm.reset();
+  } catch (err) {
+    authError.textContent = authErrorMessage(err);
+  } finally {
+    authSubmit.disabled = false;
+  }
+});
+
+signOutBtn.addEventListener('click', () => signOut(auth));
+
+googleBtn.addEventListener('click', async () => {
+  authError.textContent = '';
+  googleBtn.disabled = true;
+  try {
+    await signInWithPopup(auth, googleProvider);
+  } catch (err) {
+    authError.textContent = authErrorMessage(err);
+  } finally {
+    googleBtn.disabled = false;
+  }
+});
+
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  if (user) {
+    authScreen.style.display = 'none';
+    appScreen.style.display = 'flex';
+    userEmailEl.textContent = user.email || '';
+    loadState();
+    renderSidebar();
+    renderConversationMessages();
+  } else {
+    appScreen.style.display = 'none';
+    authScreen.style.display = 'flex';
+    conversations = [];
+    activeId = null;
+  }
+});
+
+// ======================================================================
+// Conversation storage (scoped per signed-in user, kept in this browser)
+// ======================================================================
+function genId() { return Math.random().toString(36).slice(2, 10); }
+
+function storageKey(suffix) {
+  return `pp_${suffix}_${currentUser.uid}`;
+}
+
+function saveState() {
+  if (!currentUser) return;
+  localStorage.setItem(storageKey('conversations'), JSON.stringify(conversations));
+  localStorage.setItem(storageKey('active'), activeId);
+}
+
+function loadState() {
+  if (!currentUser) return;
+  try {
+    const raw = localStorage.getItem(storageKey('conversations'));
+    conversations = raw ? JSON.parse(raw) : [];
+  } catch {
+    conversations = [];
+  }
+  if (!conversations.length) {
+    conversations = [{ id: genId(), name: 'New chat', messages: [] }];
+  }
+  activeId = localStorage.getItem(storageKey('active'));
+  if (!conversations.find((c) => c.id === activeId)) {
+    activeId = conversations[0].id;
+  }
+}
+
+function getActiveConversation() {
+  return conversations.find((c) => c.id === activeId);
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+function renderSidebar() {
+  convoList.innerHTML = '';
+  conversations.forEach((c) => {
+    const row = document.createElement('div');
+    row.className = 'convo-row' + (c.id === activeId ? ' active' : '');
+    row.innerHTML = `
+      <span class="convo-name">${escapeHtml(c.name)}</span>
+      <span class="convo-actions">
+        <button class="icon-btn rename-btn" title="Rename">✎</button>
+        <button class="icon-btn delete-btn" title="Delete">✕</button>
+      </span>
+    `;
+    row.querySelector('.convo-name').addEventListener('click', () => switchTo(c.id));
+    row.querySelector('.rename-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      startRename(c.id, row);
+    });
+    row.querySelector('.delete-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteConvo(c.id);
+    });
+    convoList.appendChild(row);
+  });
+}
+
+function startRename(id, row) {
+  const c = conversations.find((x) => x.id === id);
+  const nameSpan = row.querySelector('.convo-name');
+  const inputEl = document.createElement('input');
+  inputEl.className = 'convo-rename-input';
+  inputEl.value = c.name;
+  row.replaceChild(inputEl, nameSpan);
+  inputEl.focus();
+  inputEl.select();
+
+  function commit() {
+    const val = inputEl.value.trim() || c.name;
+    c.name = val;
+    saveState();
+    renderSidebar();
+  }
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { renderSidebar(); }
+  });
+  inputEl.addEventListener('blur', commit);
+}
+
+function deleteConvo(id) {
+  if (conversations.length === 1) {
+    const c = conversations[0];
+    c.messages = [];
+    c.name = 'New chat';
+    saveState();
+    renderSidebar();
+    renderConversationMessages();
+    return;
+  }
+  conversations = conversations.filter((c) => c.id !== id);
+  if (activeId === id) activeId = conversations[0].id;
+  saveState();
+  renderSidebar();
+  renderConversationMessages();
+}
+
+function switchTo(id) {
+  if (id === activeId) { closeSidebar(); return; }
+  activeId = id;
+  saveState();
+  renderSidebar();
+  renderConversationMessages();
+  closeSidebar();
+}
+
+newConvoBtn.addEventListener('click', () => {
+  const c = { id: genId(), name: 'New chat', messages: [] };
+  conversations.unshift(c);
+  activeId = c.id;
+  saveState();
+  renderSidebar();
+  renderConversationMessages();
+  closeSidebar();
+  input.focus();
+});
+
+function openSidebar() { sidebar.classList.add('open'); backdrop.classList.add('show'); }
+function closeSidebar() { sidebar.classList.remove('open'); backdrop.classList.remove('show'); }
+panelToggle.addEventListener('click', () => {
+  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+backdrop.addEventListener('click', closeSidebar);
+
+// ======================================================================
+// Chat rendering
+// ======================================================================
+function addMessage(role, text) {
+  systemNote.style.display = 'none';
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `<div class="role">${role === 'user' ? 'you' : 'potato'}</div><div class="bubble"></div>`;
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  return div.querySelector('.bubble');
+}
+
+function renderConversationMessages() {
+  chatWindow.querySelectorAll('.msg').forEach((el) => el.remove());
+  const convo = getActiveConversation();
+  if (!convo || convo.messages.length === 0) {
+    systemNote.style.display = '';
+  } else {
+    systemNote.style.display = 'none';
+    convo.messages.forEach((m) => {
+      addMessage(m.role, m.content).textContent = m.content;
+    });
+  }
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// ======================================================================
+// Model loading
+// ======================================================================
+if (!('gpu' in navigator)) {
+  forceCpuMode = true;
+  modelSelect.disabled = true;
+  systemNote.innerHTML = "<b>Your browser doesn't support WebGPU.</b><br>You can still load a lightweight CPU-only model below — replies will be slower, but it'll work on this device.";
+}
+
+function isDeviceCapabilityError(err) {
+  const msg = ((err && err.message) ? err.message : String(err)).toLowerCase();
+  const patterns = [
+    'webgpu', 'requestdevice', 'adapter', 'workgroupstorage',
+    'compute workgroup', 'exceeds limit', 'device lost',
+    'no gpu', 'initialize runtime', 'unsupported limit',
+  ];
+  return patterns.some((p) => msg.includes(p));
+}
+
+const FALLBACK_MODEL = 'onnx-community/gemma-3-270m-it-ONNX';
+
+async function loadFallbackModel() {
+  systemNote.style.display = '';
+  systemNote.innerHTML = "<b>This device can't run the GPU model — switching to a lightweight CPU-only mode.</b><br>It's a much smaller model and replies will be slower, but it works on virtually any device.";
+  progressWrap.classList.add('show');
+  progressBar.style.width = '0%';
+
+  try {
+    const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0');
+    cpuGenerator = await pipeline('text-generation', FALLBACK_MODEL, {
+      dtype: 'q8',
+      progress_callback: (p) => {
+        if (p.status === 'progress' && typeof p.progress === 'number') {
+          progressBar.style.width = Math.round(p.progress) + '%';
+        }
+      },
+    });
+
+    engineMode = 'cpu';
+    progressWrap.classList.remove('show');
+    systemNote.innerHTML = "<b>Ready (lightweight mode).</b> Running a small CPU-only model directly on this device — replies will be slower than GPU mode, but it works here.";
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.placeholder = "Say something…";
+    loadBtn.textContent = "Reload";
+    loadBtn.disabled = false;
+    input.focus();
+    renderConversationMessages();
+  } catch (fallbackErr) {
+    systemNote.innerHTML = `<b>Couldn't start lightweight mode either.</b><br>${(fallbackErr && fallbackErr.message) ? fallbackErr.message : fallbackErr}`;
+    loadBtn.disabled = false;
+    modelSelect.disabled = forceCpuMode ? true : false;
+    progressWrap.classList.remove('show');
+  }
+}
+
+loadBtn.addEventListener('click', async () => {
+  loadBtn.disabled = true;
+  modelSelect.disabled = true;
+  progressWrap.classList.add('show');
+  systemNote.style.display = '';
+
+  if (forceCpuMode) {
+    await loadFallbackModel();
+    return;
+  }
+
+  systemNote.innerHTML = "<b>Downloading model weights…</b><br>This only happens once — after this they're cached in your browser.";
+
+  try {
+    engine = await webllm.CreateMLCEngine(modelSelect.value, {
+      initProgressCallback: (p) => {
+        const pct = Math.round((p.progress || 0) * 100);
+        progressBar.style.width = pct + '%';
+        systemNote.innerHTML = `<b>${p.text || 'Loading…'}</b>`;
+      },
+    });
+
+    engineMode = 'webgpu';
+    progressWrap.classList.remove('show');
+    systemNote.innerHTML = `<b>Ready.</b> ${modelSelect.options[modelSelect.selectedIndex].text} is now running locally in this tab.`;
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.placeholder = "Say something…";
+    loadBtn.textContent = "Reload";
+    loadBtn.disabled = false;
+    input.focus();
+    renderConversationMessages();
+  } catch (err) {
+    if (isDeviceCapabilityError(err)) {
+      forceCpuMode = true;
+      await loadFallbackModel();
+    } else {
+      systemNote.innerHTML = `<b>Couldn't load the model.</b><br>${(err && err.message) ? err.message : err}`;
+      loadBtn.disabled = false;
+      modelSelect.disabled = false;
+      progressWrap.classList.remove('show');
+    }
+  }
+});
+
+
+// ======================================================================
+// Sending messages
+// ======================================================================
+async function send() {
+  const text = input.value.trim();
+  if (!text || generating) return;
+  if (engineMode === 'webgpu' && !engine) return;
+  if (engineMode === 'cpu' && !cpuGenerator) return;
+  const convo = getActiveConversation();
+  if (!convo) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  addMessage('user', text).textContent = text;
+  convo.messages.push({ role: 'user', content: text });
+
+  if (convo.name === 'New chat') {
+    convo.name = text.length > 32 ? text.slice(0, 32) + '…' : text;
+    renderSidebar();
+  }
+
+  const bubble = addMessage('assistant', '');
+  generating = true;
+  sendBtn.disabled = true;
+  statusDot.classList.add('live');
+
+  if (engineMode === 'cpu') {
+    bubble.textContent = '…';
+    try {
+      const result = await cpuGenerator(convo.messages, {
+        max_new_tokens: 400,
+        temperature: 0.7,
+        do_sample: true,
+      });
+      const generated = result[0]?.generated_text;
+      let replyText;
+      if (Array.isArray(generated)) {
+        const last = generated[generated.length - 1];
+        replyText = (last && last.content) ? last.content : String(generated);
+      } else {
+        replyText = String(generated || '');
+      }
+      bubble.textContent = replyText;
+      convo.messages.push({ role: 'assistant', content: replyText });
+      saveState();
+    } catch (err) {
+      bubble.textContent = "Something went wrong generating that reply: " + ((err && err.message) ? err.message : err);
+    } finally {
+      generating = false;
+      sendBtn.disabled = false;
+      statusDot.classList.remove('live');
+      input.focus();
+    }
+    return;
+  }
+
+  let full = '';
+  try {
+    const stream = await engine.chat.completions.create({
+      messages: convo.messages,
+      stream: true,
+      temperature: 0.7,
+    });
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || '';
+      full += delta;
+      bubble.textContent = full;
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    convo.messages.push({ role: 'assistant', content: full });
+    saveState();
+  } catch (err) {
+    bubble.textContent = "Something went wrong generating that reply: " + ((err && err.message) ? err.message : err);
+  } finally {
+    generating = false;
+    sendBtn.disabled = false;
+    statusDot.classList.remove('live');
+    input.focus();
+  }
+}
+
+sendBtn.addEventListener('click', send);
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+});
+</script>
+</body>
+</html>
