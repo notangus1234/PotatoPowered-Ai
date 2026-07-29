@@ -1,0 +1,2904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PotatoPowered — an AI that lives on your device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600&family=Lora:wght@400;500;600&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14171F;
+    --surface: #1B1F2B;
+    --surface-raised: #232838;
+    --line: #2B3040;
+    --ink: #E8E6DE;
+    --ink-dim: #9298AC;
+    --amber: #E8A33D;
+    --amber-dim: #6b5730;
+    --teal: #5FA8A0;
+    --error: #E2665F;
+    --radius: 10px;
+    --user-font: 'Inter', sans-serif;
+    --assistant-font: 'Inter', sans-serif;
+    --user-text-color: #E8E6DE;
+    --assistant-text-color: #E8E6DE;
+    --user-name-font: 'JetBrains Mono', monospace;
+    --assistant-name-font: 'JetBrains Mono', monospace;
+    --user-name-color: #5FA8A0;
+    --assistant-name-color: #E8A33D;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #1c2130 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+  }
+
+  /* ---- Auth screen ---- */
+  .auth-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .auth-card{
+    width:100%;
+    max-width:360px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:32px 28px;
+  }
+  .brand-mini{ display:flex; align-items:baseline; gap:10px; margin-bottom:10px; }
+  .brand-mini .dot{ width:8px; height:8px; border-radius:50%; background:var(--amber); display:inline-block; }
+  .brand-mini h1{ font-family:'Fraunces', serif; font-weight:600; font-size:24px; margin:0; letter-spacing:-0.01em; }
+  .auth-sub{ font-size:13px; color:var(--ink-dim); line-height:1.6; margin:0 0 22px; }
+  .auth-tabs{ display:flex; gap:6px; background:var(--surface-raised); border:1px solid var(--line); border-radius:8px; padding:4px; margin-bottom:18px; }
+  .auth-tab{
+    flex:1;
+    background:none;
+    border:none;
+    color:var(--ink-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    padding:8px 6px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .auth-tab.active{ background:var(--amber); color:#1a1608; }
+  .google-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:7px;
+    padding:10px;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    cursor:pointer;
+    margin-bottom:18px;
+  }
+  .google-btn:hover{ border-color:var(--ink-dim); }
+  .google-btn:disabled{ opacity:0.6; cursor:not-allowed; }
+  .incognito-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    background:none;
+    border:1px dashed var(--line);
+    color:var(--ink-dim);
+    border-radius:7px;
+    padding:10px;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    cursor:pointer;
+    margin-bottom:8px;
+  }
+  .incognito-btn:hover{ color:var(--ink); border-color:var(--ink-dim); }
+  .incognito-note{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-dim);
+    text-align:center;
+    margin:0 0 18px;
+  }
+  .memory-item{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:8px 10px;
+    margin-bottom:8px;
+    font-size:13px;
+    line-height:1.4;
+  }
+  .memory-item-text{ flex:1; }
+  .memory-item-del{
+    background:none;
+    border:none;
+    color:var(--ink-dim);
+    cursor:pointer;
+    font-size:13px;
+    flex-shrink:0;
+    padding:0 2px;
+  }
+  .memory-item-del:hover{ color:var(--error); }
+  .auth-divider{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:0 0 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-dim);
+  }
+  .auth-divider::before, .auth-divider::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  #authForm{ display:flex; flex-direction:column; gap:10px; }
+  #authForm input{
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:7px;
+    padding:11px 12px;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    outline:none;
+    width:100%;
+  }
+  #authForm input:focus{ border-color:var(--amber-dim); }
+  .auth-submit{
+    background:var(--amber);
+    color:#1a1608;
+    border:none;
+    border-radius:7px;
+    padding:11px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .auth-submit:disabled{ background:var(--amber-dim); color:#8a7a4d; cursor:not-allowed; }
+  .auth-error{
+    color:var(--error);
+    font-size:12.5px;
+    margin-top:14px;
+    line-height:1.5;
+    min-height:1px;
+  }
+  .auth-config-warning{
+    color:var(--error);
+    font-size:12px;
+    line-height:1.6;
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+
+  /* ---- App shell ---- */
+  .app-screen{ display:flex; flex-direction:column; min-height:100vh; }
+
+  /* ---- Sidebar ---- */
+  .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:30; display:none; }
+  .backdrop.show{ display:block; }
+  .customize-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:50; display:none; }
+  .customize-backdrop.show{ display:block; }
+  .customize-panel{
+    position:fixed; top:0; right:0; bottom:0; width:300px;
+    background:var(--surface);
+    border-left:1px solid var(--line);
+    transform:translateX(100%);
+    transition:transform 0.22s ease;
+    z-index:60;
+    overflow-y:auto;
+    padding:18px 18px 28px;
+  }
+  .customize-panel.open{ transform:translateX(0); }
+  .customize-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .customize-header h2{
+    font-family:'Fraunces', serif;
+    font-size:19px;
+    font-weight:600;
+    margin:0;
+  }
+  .customize-section{ margin-bottom:22px; }
+  .customize-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-dim);
+    margin-bottom:10px;
+  }
+  .swatch-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .swatch{
+    width:30px; height:30px;
+    border-radius:7px;
+    border:2px solid var(--line);
+    cursor:pointer;
+    padding:0;
+  }
+  .swatch:hover{ border-color:var(--ink-dim); }
+  .swatch.selected{ border-color:var(--amber); }
+  .custom-color-row{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:13px;
+    color:var(--ink-dim);
+  }
+  .custom-color-row input[type="color"]{
+    width:36px; height:26px;
+    border:1px solid var(--line);
+    border-radius:5px;
+    background:none;
+    cursor:pointer;
+    padding:0;
+  }
+  .customize-select{
+    width:100%;
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:7px;
+    padding:8px 10px;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    margin-bottom:8px;
+  }
+  .font-preview{
+    font-size:14.5px;
+    color:var(--ink-dim);
+    padding:8px 0 0;
+  }
+  .font-preview.name-label-preview{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+  .speed-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .speed-tick{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:var(--ink-dim);
+    flex-shrink:0;
+  }
+  .speed-row input[type="range"]{
+    flex:1;
+    accent-color:var(--amber);
+    cursor:pointer;
+  }
+  .speed-value{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    color:var(--ink);
+    margin-top:6px;
+  }
+  .customize-reset{
+    width:100%;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:7px;
+    padding:9px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .customize-reset:hover{ color:var(--ink); border-color:var(--ink-dim); }
+  .sidebar{
+    position:fixed; top:0; left:0; bottom:0; width:280px;
+    background:var(--surface);
+    border-right:1px solid var(--line);
+    transform:translateX(-100%);
+    transition:transform 0.22s ease;
+    z-index:40;
+    display:flex;
+    flex-direction:column;
+  }
+  .sidebar.open{ transform:translateX(0); }
+  .sidebar-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 16px;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-dim);
+  }
+  .icon-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:5px;
+    width:25px; height:25px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px;
+    line-height:1;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ color:var(--ink); border-color:var(--amber); }
+  .convo-list{ overflow-y:auto; flex:1; padding:8px; }
+  .convo-row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px;
+    padding:9px 10px;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:13px;
+    color:var(--ink-dim);
+    border:1px solid transparent;
+  }
+  .convo-row:hover{ background:var(--surface-raised); color:var(--ink); }
+  .convo-row.active{ background:var(--surface-raised); color:var(--ink); border-color:var(--amber-dim); }
+  .convo-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .convo-actions{ display:none; gap:4px; }
+  .convo-row:hover .convo-actions{ display:flex; }
+  .convo-rename-input{
+    flex:1;
+    background:var(--bg);
+    border:1px solid var(--amber-dim);
+    color:var(--ink);
+    border-radius:5px;
+    padding:3px 6px;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+
+  /* ---- Header ---- */
+  header{
+    padding:24px 24px 18px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    max-width:760px;
+    width:100%;
+    margin:0 auto;
+  }
+  .header-left{ display:flex; align-items:center; gap:12px; }
+  .panel-toggle{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:6px;
+    width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .panel-toggle:hover{ color:var(--ink); border-color:var(--ink-dim); }
+  .header-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .brand{display:flex; align-items:baseline; gap:12px;}
+  .brand h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--ink-dim);
+    display:inline-block;
+    position:relative;
+    top:-2px;
+  }
+  .dot.live{ background:var(--amber); animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(232,163,61,0.55); }
+    50%{ box-shadow:0 0 0 6px rgba(232,163,61,0); }
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; }
+  .level-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--surface-raised);
+    border:2px solid var(--line);
+    border-radius:20px;
+    padding:4px 9px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+  }
+  .level-text{ font-weight:500; white-space:nowrap; }
+  .level-bar-track{
+    width:56px;
+    height:5px;
+    background:var(--line);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .level-bar-fill{
+    height:100%;
+    border-radius:3px;
+    transition:width 0.3s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .level-exp-text{ color:var(--ink-dim); white-space:nowrap; }
+  .streak-text{ color:var(--ink-dim); white-space:nowrap; }
+  .level-chip.level-up{ animation:level-up-glow 1.4s ease; }
+  @keyframes level-up-glow{
+    0%   { box-shadow:0 0 0 0 rgba(232,163,61,0.6); }
+    60%  { box-shadow:0 0 0 8px rgba(232,163,61,0); }
+    100% { box-shadow:0 0 0 0 rgba(232,163,61,0); }
+  }
+
+  /* --- Ascension tiers --- */
+  .level-chip.tier-bronze{ border-color:#8a5a25; }
+  .level-chip.tier-bronze .level-text{ color:#CD7F32; }
+  .level-chip.tier-bronze .level-bar-fill{ background:#CD7F32; }
+
+  .level-chip.tier-silver{ border-color:#9a9a9a; }
+  .level-chip.tier-silver .level-text{ color:#C8C8C8; }
+  .level-chip.tier-silver .level-bar-fill{ background:#C0C0C0; }
+
+  .level-chip.tier-gold{ border-color:#b8960a; }
+  .level-chip.tier-gold .level-text{ color:#FFD700; }
+  .level-chip.tier-gold .level-bar-fill{ background:#FFD700; }
+
+  .level-chip.tier-diamond{ border-color:#6fc3de; box-shadow:0 0 6px rgba(143,217,240,0.3); }
+  .level-chip.tier-diamond .level-text{ color:#9fe4f7; }
+  .level-chip.tier-diamond .level-bar-fill{ background:linear-gradient(90deg,#8fd9f0,#c7f3ff); }
+
+  /* Platinum: grayish base, with a clear/translucent animated rainbow sheen
+     layered on top — deliberately distinct from Silver's flat gray. */
+  .level-chip.tier-platinum{ border-color:#b7b9bd; }
+  .level-chip.tier-platinum .level-text{ color:#DCDDE0; }
+  .level-chip.tier-platinum .level-bar-fill{ background:#c9cbcf; }
+  .level-chip.tier-platinum .level-bar-fill::after{
+    content:'';
+    position:absolute; inset:0;
+    background:linear-gradient(120deg, #ff6b6b, #ffd93d, #6bff8f, #6bd4ff, #b06bff, #ff6b6b);
+    background-size:300% 300%;
+    opacity:0.5;
+    mix-blend-mode:screen;
+    animation:rainbow-shift 4s linear infinite;
+  }
+  @keyframes rainbow-shift{
+    0%   { background-position:0% 50%; }
+    100% { background-position:300% 50%; }
+  }
+
+  /* --- Ascend prompt --- */
+  .ascend-btn{
+    display:none;
+    background:var(--amber);
+    color:#1a1608;
+    border:none;
+    border-radius:12px;
+    padding:3px 10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+    animation:ascend-pulse 1.6s ease-in-out infinite;
+  }
+  .level-chip.ascension-ready .level-bar-track,
+  .level-chip.ascension-ready .level-exp-text{ display:none; }
+  .level-chip.ascension-ready .ascend-btn{ display:inline-block; }
+  @keyframes ascend-pulse{
+    0%, 100% { box-shadow:0 0 0 0 rgba(232,163,61,0.55); }
+    50%      { box-shadow:0 0 0 5px rgba(232,163,61,0); }
+  }
+  .user-email{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+    max-width:180px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* ---- Model bar ---- */
+  .modelbar{
+    max-width:760px;
+    width:100%;
+    margin:0 auto;
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+  }
+  select{
+    background:var(--surface-raised);
+    color:var(--ink);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    cursor:pointer;
+  }
+  select:disabled{ opacity:0.5; cursor:not-allowed; }
+  .loadbtn{
+    background:var(--amber);
+    color:#1a1608;
+    border:none;
+    border-radius:6px;
+    padding:7px 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .loadbtn:disabled{ background:var(--amber-dim); color:#8a7a4d; cursor:not-allowed; }
+  .auto-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:var(--teal);
+    background:rgba(95,168,160,0.12);
+    border:1px solid var(--teal);
+    border-radius:5px;
+    padding:3px 8px;
+    white-space:nowrap;
+  }
+  .progress-wrap{
+    flex:1 1 160px;
+    min-width:140px;
+    height:6px;
+    background:var(--surface-raised);
+    border-radius:4px;
+    overflow:hidden;
+    display:none;
+  }
+  .progress-wrap.show{ display:block; }
+  .progress-bar{
+    height:100%; width:0%;
+    background:var(--amber);
+    transition:width 0.2s ease;
+  }
+
+  /* ---- Chat ---- */
+  main{
+    flex:1;
+    max-width:760px;
+    width:100%;
+    margin:0 auto;
+    padding:12px 24px 140px;
+    overflow-y:auto;
+  }
+  .msg{
+    padding:16px 0;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    gap:14px;
+  }
+  .msg:last-child{ border-bottom:none; }
+  .role{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-dim);
+  }
+  .msg.user .role{ width:64px; flex-shrink:0; padding-top:3px; font-family:var(--user-name-font); color:var(--user-name-color); }
+  .msg.assistant .role{ font-family:var(--assistant-name-font); color:var(--assistant-name-color); }
+  .bubble{ line-height:1.6; font-size:15px; white-space:pre-wrap; }
+  .msg.user .bubble{ font-family:var(--user-font); color:var(--user-text-color); }
+  .msg.assistant .bubble{ font-family:var(--assistant-font); color:var(--assistant-text-color); white-space:normal; }
+  .msg.assistant .bubble .msg-text{ white-space:pre-wrap; }
+  .code-box{
+    margin:10px 0;
+    background:#0F1219;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .code-box-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:6px 10px;
+    background:var(--surface-raised);
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+  }
+  .code-lang{ text-transform:lowercase; letter-spacing:0.03em; }
+  .code-copy-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:5px;
+    padding:2px 8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    cursor:pointer;
+  }
+  .code-copy-btn:hover{ color:var(--ink); border-color:var(--ink-dim); }
+  .code-copy-btn.copied{ color:var(--teal); border-color:var(--teal); }
+  .code-box-pre{
+    margin:0;
+    padding:12px 14px;
+    overflow-x:auto;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    line-height:1.5;
+    color:var(--ink);
+  }
+  .system-note{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    text-align:center;
+    padding:40px 20px;
+    line-height:1.8;
+  }
+  .system-note b{ color:var(--ink); }
+
+  /* ---- Input dock ---- */
+  .dock{
+    position:fixed;
+    bottom:0; left:0; right:0;
+    background:linear-gradient(180deg, transparent, var(--bg) 30%);
+    padding:24px 24px 22px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .dockinner{
+    max-width:760px;
+    width:100%;
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px 10px 10px 16px;
+  }
+  .search-toggle{
+    position:relative;
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:7px;
+    width:38px; height:38px;
+    flex-shrink:0;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+  }
+  .search-toggle:hover{ border-color:var(--ink-dim); }
+  .search-toggle.active{
+    background:#5FA873;
+    border-color:#5FA873;
+    color:#0d1f1d;
+  }
+  .search-toggle.depleted{ opacity:0.5; }
+  .mic-btn{
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:7px;
+    width:38px; height:38px;
+    flex-shrink:0;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+  }
+  .mic-btn:hover{ border-color:var(--ink-dim); }
+  .mic-btn.recording{
+    background:var(--error);
+    border-color:var(--error);
+    color:#fff;
+    animation:mic-pulse 1.2s ease-in-out infinite;
+  }
+  .mic-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  @keyframes mic-pulse{
+    0%, 100% { box-shadow:0 0 0 0 rgba(226,102,95,0.5); }
+    50% { box-shadow:0 0 0 6px rgba(226,102,95,0); }
+  }
+  .role-col{
+    width:64px;
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:5px;
+    padding-top:3px;
+  }
+  .tts-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:5px;
+    width:22px; height:22px;
+    padding:0;
+    cursor:pointer;
+    font-size:10px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tts-btn:hover{ color:var(--ink); border-color:var(--ink-dim); }
+  .tts-btn.speaking{ color:var(--teal); border-color:var(--teal); }
+  .search-credits{
+    position:absolute;
+    top:-6px; right:-6px;
+    background:var(--amber);
+    color:#1a1608;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9px;
+    font-weight:500;
+    line-height:1;
+    min-width:15px;
+    height:15px;
+    border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    padding:0 3px;
+  }
+  .search-toggle.active .search-credits{ background:var(--surface); color:var(--ink); }
+  .search-toggle.depleted .search-credits{ background:var(--ink-dim); color:var(--bg); }
+  .search-warning{
+    max-width:760px;
+    width:100%;
+    margin:0 auto 8px;
+    color:var(--error);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-align:center;
+  }
+  textarea{
+    flex:1;
+    background:none;
+    border:none;
+    outline:none;
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    resize:none;
+    max-height:140px;
+    line-height:1.5;
+    padding:6px 0;
+  }
+  textarea::placeholder{ color:var(--ink-dim); }
+  .send{
+    background:var(--amber);
+    color:#1a1608;
+    border:none;
+    border-radius:7px;
+    width:38px; height:38px;
+    flex-shrink:0;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .send:disabled{ background:var(--amber-dim); color:#8a7a4d; cursor:not-allowed; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="brand-mini"><span class="dot"></span><h1>PotatoPowered</h1></div>
+    <p class="auth-sub">Sign in to start chatting. Your account keeps your conversations tied to you on this browser.</p>
+
+    <button type="button" class="google-btn" id="googleBtn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.94v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.97H.94A9 9 0 0 0 0 9c0 1.45.35 2.83.94 4.03l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .94 4.97l3.01 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+      Continue with Google
+    </button>
+    <button type="button" class="incognito-btn" id="incognitoBtn">
+      🕶️ Continue in Incognito
+    </button>
+    <p class="incognito-note">No search, and nothing is saved — closing or refreshing the tab clears everything.</p>
+    <div class="auth-divider"><span>or continue with email</span></div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-mode="signin" id="tabSignin" type="button">Sign in</button>
+      <button class="auth-tab" data-mode="signup" id="tabSignup" type="button">Create account</button>
+    </div>
+
+    <form id="authForm">
+      <input type="email" id="authEmail" placeholder="Email" required autocomplete="email">
+      <input type="password" id="authPassword" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <button type="submit" class="auth-submit" id="authSubmit">Sign in</button>
+    </form>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-config-warning" id="authConfigWarning" style="display:none;">
+      <b>Firebase isn't configured yet.</b> Replace the <code>firebaseConfig</code> placeholder near the top of the script with your own project's config to enable sign-in.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SCREEN ============ -->
+<div class="app-screen" id="appScreen" style="display:none;">
+
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span>Conversations</span>
+      <button class="icon-btn" id="newConvoBtn" title="New conversation">+</button>
+    </div>
+    <div class="convo-list" id="convoList"></div>
+  </aside>
+
+  <header>
+    <div class="header-left">
+      <button class="panel-toggle" id="panelToggle" title="Conversations" aria-label="Toggle conversations panel">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2.5" width="15" height="13" rx="2"/><line x1="6.5" y1="2.5" x2="6.5" y2="15.5"/></svg>
+      </button>
+      <div class="brand">
+        <span class="dot" id="statusDot"></span>
+        <h1>PotatoPowered</h1>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="level-chip tier-bronze" id="levelChip" title="Level 0 (Bronze) · 0 / 10,000 EXP">
+        <span class="level-text" id="levelText">Lv 0</span>
+        <div class="level-bar-track"><div class="level-bar-fill" id="levelBarFill" style="width:0%"></div></div>
+        <span class="level-exp-text" id="levelExpText">0/10k</span>
+        <button type="button" class="ascend-btn" id="ascendBtn">⬆ Ascend</button>
+        <span class="streak-text" id="streakText">🔥0</span>
+      </div>
+      <button class="icon-btn" id="memoryBtn" title="Memory" aria-label="Memory">🧠</button>
+      <button class="icon-btn" id="customizeBtn" title="Customize appearance" aria-label="Customize appearance">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2.2M10 15.3v2.2M17.5 10h-2.2M4.7 10H2.5M15.3 4.7l-1.55 1.55M6.25 13.75L4.7 15.3M15.3 15.3l-1.55-1.55M6.25 6.25L4.7 4.7"/></svg>
+      </button>
+      <div class="user-chip">
+        <span class="user-email" id="userEmail"></span>
+        <button class="icon-btn" id="signOutBtn" title="Sign out">⏻</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="customize-backdrop" id="memoryBackdrop"></div>
+  <div class="customize-panel" id="memoryPanel">
+    <div class="customize-header">
+      <h2>Memory</h2>
+      <button class="icon-btn" id="memoryCloseBtn" title="Close" aria-label="Close">✕</button>
+    </div>
+    <p class="incognito-note" style="margin-bottom:16px; text-align:left;">
+      Facts Potato has picked up from your conversations, used to answer things across chats. Delete anything you don't want remembered.
+    </p>
+    <div id="memoryList"></div>
+    <p class="incognito-note" id="memoryEmptyNote" style="text-align:left;">Nothing remembered yet — it fills in as you chat.</p>
+    <button type="button" class="customize-reset" id="memoryClearBtn">Clear all memory</button>
+  </div>
+
+  <div class="customize-backdrop" id="customizeBackdrop"></div>
+  <div class="customize-panel" id="customizePanel">
+    <div class="customize-header">
+      <h2>Customize</h2>
+      <button class="icon-btn" id="customizeCloseBtn" title="Close" aria-label="Close">✕</button>
+    </div>
+
+    <div class="customize-section">
+      <div class="customize-label">Background</div>
+      <div class="swatch-row" id="bgSwatches">
+        <button type="button" class="swatch" data-bg="#14171F" style="background:#14171F;" title="Midnight (default)"></button>
+        <button type="button" class="swatch" data-bg="#1B1E2A" style="background:#1B1E2A;" title="Slate"></button>
+        <button type="button" class="swatch" data-bg="#14191A" style="background:#14191A;" title="Forest"></button>
+        <button type="button" class="swatch" data-bg="#1F1417" style="background:#1F1417;" title="Wine"></button>
+        <button type="button" class="swatch" data-bg="#11161F" style="background:#11161F;" title="Ocean"></button>
+        <button type="button" class="swatch" data-bg="#000000" style="background:#000000;" title="True black"></button>
+      </div>
+      <label class="custom-color-row">
+        <span>Custom color</span>
+        <input type="color" id="bgColorPicker" value="#14171F">
+      </label>
+    </div>
+
+    <div class="customize-section">
+      <div class="customize-label">Your text font & color</div>
+      <select id="userFontSelect" class="customize-select">
+        <option value="'Inter', sans-serif" selected>Inter (default)</option>
+        <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+        <option value="'Lora', serif">Lora</option>
+        <option value="'Fraunces', serif">Fraunces</option>
+        <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+        <option value="'Courier Prime', monospace">Courier Prime</option>
+      </select>
+      <label class="custom-color-row">
+        <span>Text color</span>
+        <input type="color" id="userColorPicker" value="#E8E6DE">
+      </label>
+      <div class="font-preview" id="userFontPreview" style="font-family:'Inter', sans-serif; color:#E8E6DE;">The quick brown fox jumps.</div>
+    </div>
+
+    <div class="customize-section">
+      <div class="customize-label">Potato's text font & color</div>
+      <select id="assistantFontSelect" class="customize-select">
+        <option value="'Inter', sans-serif" selected>Inter (default)</option>
+        <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+        <option value="'Lora', serif">Lora</option>
+        <option value="'Fraunces', serif">Fraunces</option>
+        <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+        <option value="'Courier Prime', monospace">Courier Prime</option>
+      </select>
+      <label class="custom-color-row">
+        <span>Text color</span>
+        <input type="color" id="assistantColorPicker" value="#E8E6DE">
+      </label>
+      <div class="font-preview" id="assistantFontPreview" style="font-family:'Inter', sans-serif; color:#E8E6DE;">The quick brown fox jumps.</div>
+    </div>
+
+    <div class="customize-section">
+      <div class="customize-label">Your name label ("you")</div>
+      <select id="userNameFontSelect" class="customize-select">
+        <option value="'JetBrains Mono', monospace" selected>JetBrains Mono (default)</option>
+        <option value="'Inter', sans-serif">Inter</option>
+        <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+        <option value="'Lora', serif">Lora</option>
+        <option value="'Fraunces', serif">Fraunces</option>
+        <option value="'Courier Prime', monospace">Courier Prime</option>
+      </select>
+      <label class="custom-color-row">
+        <span>Label color</span>
+        <input type="color" id="userNameColorPicker" value="#5FA8A0">
+      </label>
+      <div class="font-preview name-label-preview" id="userNameFontPreview" style="font-family:'JetBrains Mono', monospace; color:#5FA8A0;">YOU</div>
+    </div>
+
+    <div class="customize-section">
+      <div class="customize-label">Potato's name label ("potato")</div>
+      <select id="assistantNameFontSelect" class="customize-select">
+        <option value="'JetBrains Mono', monospace" selected>JetBrains Mono (default)</option>
+        <option value="'Inter', sans-serif">Inter</option>
+        <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+        <option value="'Lora', serif">Lora</option>
+        <option value="'Fraunces', serif">Fraunces</option>
+        <option value="'Courier Prime', monospace">Courier Prime</option>
+      </select>
+      <label class="custom-color-row">
+        <span>Label color</span>
+        <input type="color" id="assistantNameColorPicker" value="#E8A33D">
+      </label>
+      <div class="font-preview name-label-preview" id="assistantNameFontPreview" style="font-family:'JetBrains Mono', monospace; color:#E8A33D;">POTATO</div>
+    </div>
+
+    <div class="customize-section">
+      <div class="customize-label">Voice playback speed</div>
+      <div class="speed-row">
+        <span class="speed-tick">0.5x</span>
+        <input type="range" id="speechRateSlider" min="0.5" max="2" step="0.1" value="1">
+        <span class="speed-tick">2x</span>
+      </div>
+      <div class="speed-value" id="speechRateValue">1.0x</div>
+    </div>
+
+    <button type="button" class="customize-reset" id="customizeResetBtn">Reset to defaults</button>
+  </div>
+
+  <div class="modelbar">
+    <span>model</span>
+    <select id="modelSelect">
+      <option value="auto">✨ Smart Auto — picks a model per message</option>
+      <option value="SmolLM2-360M-Instruct-q4f16_1-MLC">SmolLM2 360M — fastest, ~380MB</option>
+      <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" selected>Llama 3.2 1B — balanced, ~900MB</option>
+      <option value="gemma-2-2b-it-q4f16_1-MLC">Gemma 2 2B — well-rounded, ~1.9GB</option>
+      <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">Llama 3.2 3B — strongest, ~2.3GB</option>
+      <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC">Qwen 2.5 3B — strong multilingual, ~2.5GB</option>
+      <option value="Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC">Qwen 2.5 Coder 3B — coding-focused, ~2.5GB</option>
+      <option value="Phi-3.5-mini-instruct-q4f16_1-MLC">Phi-3.5 Mini — capable, ~3.7GB</option>
+      <optgroup label="Needs a dedicated GPU (~5GB VRAM)">
+        <option value="Llama-3.1-8B-Instruct-q4f16_1-MLC">Llama 3.1 8B — most capable overall</option>
+        <option value="DeepSeek-R1-Distill-Llama-8B-q4f16_1-MLC">DeepSeek R1 Distill 8B — best at reasoning/math</option>
+        <option value="Hermes-3-Llama-3.1-8B-q4f16_1-MLC">Hermes 3 Llama 8B — best instruction-following</option>
+      </optgroup>
+    </select>
+    <span class="auto-badge" id="autoBadge" style="display:none;"></span>
+    <button class="loadbtn" id="loadBtn">Load model</button>
+    <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+  </div>
+
+  <main id="chatWindow">
+    <div class="system-note" id="systemNote">
+      <b>Nothing has loaded yet.</b><br>
+      Pick a model above and hit "Load model." It downloads once into your browser's
+      cache and then runs fully offline, on your CPU/GPU — no server involved,
+      ever. First load takes a minute or two depending on model size and connection.
+    </div>
+  </main>
+
+  <div class="dock">
+    <div class="search-warning" id="searchWarning" style="display:none;">
+      Web search isn't configured yet — set SEARCH_WORKER_URL near the top of the script.
+    </div>
+    <div class="dockinner">
+      <button class="search-toggle" id="searchToggle" type="button" title="Web search: off">🔍<span class="search-credits" id="searchCredits">10</span></button>
+      <button class="mic-btn" id="micBtn" type="button" title="Voice input">🎤</button>
+      <textarea id="input" rows="1" placeholder="Load a model to start chatting…" disabled></textarea>
+      <button class="send" id="sendBtn" disabled title="Send">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+// ======================================================================
+// TODO: replace with YOUR OWN Firebase project's config.
+// Firebase console → Project settings → General → Your apps → SDK setup.
+// This is safe to make public — Firebase web config is not a secret.
+// ======================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDhx1Na5041oNb2QD-y1keHjM-VPNFQAaw",
+  authDomain: "ai-website-production.firebaseapp.com",
+  projectId: "ai-website-production",
+  storageBucket: "ai-website-production.firebasestorage.app",
+  messagingSenderId: "516316894401",
+  appId: "1:516316894401:web:1bbbffdf35fee70f6ef040",
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
+// ======================================================================
+// TODO: replace with YOUR OWN Cloudflare Worker URL (see setup steps).
+// This Worker is what actually calls the search API — your search key
+// stays secret on Cloudflare's side and is never present in this file.
+// ======================================================================
+const SEARCH_WORKER_URL = "https://potatopowered-search.notangus1234.workers.dev";
+
+// ---- DOM refs: auth screen ----
+const authScreen = document.getElementById('authScreen');
+const appScreen = document.getElementById('appScreen');
+const authForm = document.getElementById('authForm');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authSubmit = document.getElementById('authSubmit');
+const authError = document.getElementById('authError');
+const authConfigWarning = document.getElementById('authConfigWarning');
+const tabSignin = document.getElementById('tabSignin');
+const tabSignup = document.getElementById('tabSignup');
+const googleBtn = document.getElementById('googleBtn');
+const incognitoBtn = document.getElementById('incognitoBtn');
+const userEmailEl = document.getElementById('userEmail');
+const signOutBtn = document.getElementById('signOutBtn');
+const levelChip = document.getElementById('levelChip');
+const levelText = document.getElementById('levelText');
+const levelBarFill = document.getElementById('levelBarFill');
+const levelExpText = document.getElementById('levelExpText');
+const ascendBtn = document.getElementById('ascendBtn');
+const streakText = document.getElementById('streakText');
+const memoryBtn = document.getElementById('memoryBtn');
+const memoryBackdrop = document.getElementById('memoryBackdrop');
+const memoryPanel = document.getElementById('memoryPanel');
+const memoryCloseBtn = document.getElementById('memoryCloseBtn');
+const memoryList = document.getElementById('memoryList');
+const memoryEmptyNote = document.getElementById('memoryEmptyNote');
+const memoryClearBtn = document.getElementById('memoryClearBtn');
+const customizeBtn = document.getElementById('customizeBtn');
+const customizeCloseBtn = document.getElementById('customizeCloseBtn');
+const customizePanel = document.getElementById('customizePanel');
+const customizeBackdrop = document.getElementById('customizeBackdrop');
+const bgSwatches = document.getElementById('bgSwatches');
+const bgColorPicker = document.getElementById('bgColorPicker');
+const userFontSelect = document.getElementById('userFontSelect');
+const assistantFontSelect = document.getElementById('assistantFontSelect');
+const userFontPreview = document.getElementById('userFontPreview');
+const assistantFontPreview = document.getElementById('assistantFontPreview');
+const userColorPicker = document.getElementById('userColorPicker');
+const assistantColorPicker = document.getElementById('assistantColorPicker');
+const userNameFontSelect = document.getElementById('userNameFontSelect');
+const assistantNameFontSelect = document.getElementById('assistantNameFontSelect');
+const userNameColorPicker = document.getElementById('userNameColorPicker');
+const assistantNameColorPicker = document.getElementById('assistantNameColorPicker');
+const userNameFontPreview = document.getElementById('userNameFontPreview');
+const assistantNameFontPreview = document.getElementById('assistantNameFontPreview');
+const speechRateSlider = document.getElementById('speechRateSlider');
+const speechRateValue = document.getElementById('speechRateValue');
+const customizeResetBtn = document.getElementById('customizeResetBtn');
+
+// ---- DOM refs: app screen ----
+const modelSelect = document.getElementById('modelSelect');
+const loadBtn = document.getElementById('loadBtn');
+const autoBadge = document.getElementById('autoBadge');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const chatWindow = document.getElementById('chatWindow');
+const systemNote = document.getElementById('systemNote');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const micBtn = document.getElementById('micBtn');
+const statusDot = document.getElementById('statusDot');
+const sidebar = document.getElementById('sidebar');
+
+// Voice features use the browser's own built-in speech APIs — free, no
+// extra download, no server involved. Support varies by browser, so we
+// feature-detect and quietly disable rather than showing a broken button.
+const ttsSupported = 'speechSynthesis' in window;
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+const sttSupported = !!SpeechRecognitionAPI;
+const backdrop = document.getElementById('backdrop');
+const panelToggle = document.getElementById('panelToggle');
+const convoList = document.getElementById('convoList');
+const newConvoBtn = document.getElementById('newConvoBtn');
+const searchToggle = document.getElementById('searchToggle');
+const searchWarning = document.getElementById('searchWarning');
+const searchCreditsEl = document.getElementById('searchCredits');
+
+// ======================================================================
+// Appearance customization
+// ======================================================================
+const DEFAULT_BG = '#14171F';
+const DEFAULT_FONT = "'Inter', sans-serif";
+const DEFAULT_TEXT_COLOR = '#E8E6DE';
+const DEFAULT_NAME_FONT = "'JetBrains Mono', monospace";
+const DEFAULT_USER_NAME_COLOR = '#5FA8A0';
+const DEFAULT_ASSISTANT_NAME_COLOR = '#E8A33D';
+const DEFAULT_SPEECH_RATE = 1;
+let bgColor = DEFAULT_BG;
+let userFont = DEFAULT_FONT;
+let assistantFont = DEFAULT_FONT;
+let userTextColor = DEFAULT_TEXT_COLOR;
+let assistantTextColor = DEFAULT_TEXT_COLOR;
+let userNameFont = DEFAULT_NAME_FONT;
+let assistantNameFont = DEFAULT_NAME_FONT;
+let userNameColor = DEFAULT_USER_NAME_COLOR;
+let assistantNameColor = DEFAULT_ASSISTANT_NAME_COLOR;
+let speechRate = DEFAULT_SPEECH_RATE;
+
+function applyAppearance() {
+  document.documentElement.style.setProperty('--bg', bgColor);
+  document.documentElement.style.setProperty('--user-font', userFont);
+  document.documentElement.style.setProperty('--assistant-font', assistantFont);
+  document.documentElement.style.setProperty('--user-text-color', userTextColor);
+  document.documentElement.style.setProperty('--assistant-text-color', assistantTextColor);
+  document.documentElement.style.setProperty('--user-name-font', userNameFont);
+  document.documentElement.style.setProperty('--assistant-name-font', assistantNameFont);
+  document.documentElement.style.setProperty('--user-name-color', userNameColor);
+  document.documentElement.style.setProperty('--assistant-name-color', assistantNameColor);
+
+  bgColorPicker.value = bgColor;
+  userFontSelect.value = userFont;
+  assistantFontSelect.value = assistantFont;
+  userColorPicker.value = userTextColor;
+  assistantColorPicker.value = assistantTextColor;
+  userNameFontSelect.value = userNameFont;
+  assistantNameFontSelect.value = assistantNameFont;
+  userNameColorPicker.value = userNameColor;
+  assistantNameColorPicker.value = assistantNameColor;
+
+  userFontPreview.style.fontFamily = userFont;
+  userFontPreview.style.color = userTextColor;
+  assistantFontPreview.style.fontFamily = assistantFont;
+  assistantFontPreview.style.color = assistantTextColor;
+  userNameFontPreview.style.fontFamily = userNameFont;
+  userNameFontPreview.style.color = userNameColor;
+  assistantNameFontPreview.style.fontFamily = assistantNameFont;
+  assistantNameFontPreview.style.color = assistantNameColor;
+
+  bgSwatches.querySelectorAll('.swatch').forEach((sw) => {
+    sw.classList.toggle('selected', sw.dataset.bg.toLowerCase() === bgColor.toLowerCase());
+  });
+
+  speechRateSlider.value = speechRate;
+  speechRateValue.textContent = speechRate.toFixed(1) + 'x';
+}
+
+function openCustomizePanel() {
+  customizePanel.classList.add('open');
+  customizeBackdrop.classList.add('show');
+}
+function closeCustomizePanel() {
+  customizePanel.classList.remove('open');
+  customizeBackdrop.classList.remove('show');
+}
+customizeBtn.addEventListener('click', openCustomizePanel);
+customizeCloseBtn.addEventListener('click', closeCustomizePanel);
+customizeBackdrop.addEventListener('click', closeCustomizePanel);
+
+bgSwatches.addEventListener('click', (e) => {
+  const sw = e.target.closest('.swatch');
+  if (!sw) return;
+  bgColor = sw.dataset.bg;
+  applyAppearance();
+  saveState();
+});
+bgColorPicker.addEventListener('input', () => {
+  bgColor = bgColorPicker.value;
+  applyAppearance();
+});
+bgColorPicker.addEventListener('change', () => saveState());
+
+userFontSelect.addEventListener('change', () => {
+  userFont = userFontSelect.value;
+  applyAppearance();
+  saveState();
+});
+assistantFontSelect.addEventListener('change', () => {
+  assistantFont = assistantFontSelect.value;
+  applyAppearance();
+  saveState();
+});
+
+userColorPicker.addEventListener('input', () => {
+  userTextColor = userColorPicker.value;
+  applyAppearance();
+});
+userColorPicker.addEventListener('change', () => saveState());
+assistantColorPicker.addEventListener('input', () => {
+  assistantTextColor = assistantColorPicker.value;
+  applyAppearance();
+});
+assistantColorPicker.addEventListener('change', () => saveState());
+
+userNameFontSelect.addEventListener('change', () => {
+  userNameFont = userNameFontSelect.value;
+  applyAppearance();
+  saveState();
+});
+assistantNameFontSelect.addEventListener('change', () => {
+  assistantNameFont = assistantNameFontSelect.value;
+  applyAppearance();
+  saveState();
+});
+userNameColorPicker.addEventListener('input', () => {
+  userNameColor = userNameColorPicker.value;
+  applyAppearance();
+});
+userNameColorPicker.addEventListener('change', () => saveState());
+assistantNameColorPicker.addEventListener('input', () => {
+  assistantNameColor = assistantNameColorPicker.value;
+  applyAppearance();
+});
+assistantNameColorPicker.addEventListener('change', () => saveState());
+
+speechRateSlider.addEventListener('input', () => {
+  speechRate = parseFloat(speechRateSlider.value);
+  speechRateValue.textContent = speechRate.toFixed(1) + 'x';
+});
+speechRateSlider.addEventListener('change', () => saveState());
+
+customizeResetBtn.addEventListener('click', () => {
+  bgColor = DEFAULT_BG;
+  userFont = DEFAULT_FONT;
+  assistantFont = DEFAULT_FONT;
+  userTextColor = DEFAULT_TEXT_COLOR;
+  assistantTextColor = DEFAULT_TEXT_COLOR;
+  userNameFont = DEFAULT_NAME_FONT;
+  assistantNameFont = DEFAULT_NAME_FONT;
+  userNameColor = DEFAULT_USER_NAME_COLOR;
+  assistantNameColor = DEFAULT_ASSISTANT_NAME_COLOR;
+  speechRate = DEFAULT_SPEECH_RATE;
+  applyAppearance();
+  saveState();
+});
+
+// ======================================================================
+// Leveling + daily streak + ascension tiers
+// Level 0->1 needs 10,000 EXP. Each level after that needs MORE than the
+// last, by an amount that depends on the current ascension tier:
+//   Bronze (start): +2,000 EXP per level
+//   Silver:         +2,500 EXP per level
+//   Gold:           +3,000 EXP per level
+//   Diamond:        +3,500 EXP per level
+//   Platinum:       +4,000 EXP per level
+// Every 100th level (100, 200, 300, 400) is an ascension gate: leveling
+// freezes there until the person chooses to ascend to the next tier.
+// Platinum has no further tier to ascend to, so leveling past 400
+// continues indefinitely at Platinum's rate with no more gates.
+//
+// Each question awards between 25 (MIN) and 1,000 (MAX) EXP depending on
+// how substantial the question looks (length + complexity signals) — a
+// one-word "hi" lands near the floor, a long multi-part technical
+// question lands near the ceiling. A daily streak bonus is awarded once
+// per calendar day: 7,500 EXP for day 1, +500 EXP per additional
+// consecutive day, on top of whatever the question itself earned.
+// ======================================================================
+const ASCENSION_TIERS = [
+  { name: 'Bronze', increment: 2000 },
+  { name: 'Silver', increment: 2500 },
+  { name: 'Gold', increment: 3000 },
+  { name: 'Diamond', increment: 3500 },
+  { name: 'Platinum', increment: 4000 },
+];
+
+let userLevel = 0;
+let levelExp = 0;
+let levelExpNeeded = 10000; // EXP required to clear the CURRENT level
+let ascensionTier = 0; // index into ASCENSION_TIERS — starts at Bronze
+let pendingAscension = false; // true when frozen at a *100 gate awaiting ascension
+let streakCount = 0;
+let lastActiveDayKey = null;
+
+const MIN_QUESTION_EXP = 25;
+const MAX_QUESTION_EXP = 1000;
+const STREAK_BASE_EXP = 3500;
+const STREAK_EXP_STEP = 500;
+
+function calculateQuestionExp(text) {
+  const trimmed = String(text).trim();
+  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+  const t = trimmed.toLowerCase();
+
+  // Length is the main driver — roughly 12 EXP per word, starting from the floor.
+  let exp = MIN_QUESTION_EXP + wordCount * 12;
+
+  // A handful of signals that suggest genuine complexity rather than length
+  // for its own sake (e.g. a pasted code block, "why/how/explain", etc.).
+  const complexitySignals = [
+    'why', 'how', 'explain', 'compar', 'differen', 'analy',
+    'algorithm', 'step by step', 'pros and cons', 'versus', ' vs ',
+    'code', '```',
+  ];
+  complexitySignals.forEach((signal) => { if (t.includes(signal)) exp += 60; });
+
+  // More than one question mark suggests a multi-part question.
+  const questionMarks = (trimmed.match(/\?/g) || []).length;
+  if (questionMarks > 1) exp += 50;
+
+  return Math.max(MIN_QUESTION_EXP, Math.min(MAX_QUESTION_EXP, Math.round(exp)));
+}
+
+function todayDayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function dayKeyToMidnight(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+
+// Reconstructs a sensible levelExpNeeded for accounts saved before
+// ascension tiers existed (they were always effectively Bronze).
+function legacyExpNeededForLevel(level) {
+  return (10 + 2 * level) * 1000;
+}
+
+function awardExp(amount) {
+  if (pendingAscension) return false; // frozen at a gate — must ascend first
+  levelExp += amount;
+  let leveledUp = false;
+  while (levelExp >= levelExpNeeded) {
+    levelExp -= levelExpNeeded;
+    userLevel += 1;
+    leveledUp = true;
+
+    const hasNextTier = ascensionTier < ASCENSION_TIERS.length - 1;
+    if (userLevel % 100 === 0 && hasNextTier) {
+      pendingAscension = true; // hold here — no more leveling until they ascend
+      break;
+    }
+    levelExpNeeded += ASCENSION_TIERS[ascensionTier].increment;
+  }
+  return leveledUp;
+}
+
+function ascendTier() {
+  if (!pendingAscension) return;
+  if (ascensionTier >= ASCENSION_TIERS.length - 1) return;
+  ascensionTier += 1;
+  pendingAscension = false;
+  levelExpNeeded += ASCENSION_TIERS[ascensionTier].increment;
+  renderLevelChip();
+  flashLevelUp();
+  saveState();
+}
+ascendBtn.addEventListener('click', ascendTier);
+
+function formatExpShort(n) {
+  if (n >= 1000) {
+    const k = n / 1000;
+    return (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
+  }
+  return String(n);
+}
+
+function renderLevelChip() {
+  const tier = ASCENSION_TIERS[ascensionTier];
+  levelChip.className = 'level-chip tier-' + tier.name.toLowerCase();
+  levelChip.classList.toggle('ascension-ready', pendingAscension);
+
+  levelText.textContent = 'Lv ' + userLevel;
+  streakText.textContent = '🔥' + streakCount;
+
+  if (pendingAscension) {
+    const nextTier = ASCENSION_TIERS[ascensionTier + 1];
+    ascendBtn.textContent = '⬆ Ascend to ' + nextTier.name;
+    levelChip.title = `Level ${userLevel} (${tier.name}) · Ascension available — click to become ${nextTier.name}!`;
+  } else {
+    levelBarFill.style.width = Math.min(100, Math.round((levelExp / levelExpNeeded) * 100)) + '%';
+    levelExpText.textContent = formatExpShort(levelExp) + '/' + formatExpShort(levelExpNeeded);
+    levelChip.title = `Level ${userLevel} (${tier.name}) · ${levelExp.toLocaleString()} / ${levelExpNeeded.toLocaleString()} EXP · 🔥 ${streakCount} day streak`;
+  }
+}
+
+function flashLevelUp() {
+  levelChip.classList.remove('level-up');
+  void levelChip.offsetWidth; // restart the animation if it's already mid-flash
+  levelChip.classList.add('level-up');
+  setTimeout(() => levelChip.classList.remove('level-up'), 1400);
+}
+
+// Called once per user message sent (skipped entirely in incognito, since
+// nothing there is meant to persist). Awards complexity-scaled question
+// EXP every time, and the daily streak bonus at most once per calendar day.
+function registerQuestionAsked(text) {
+  const todayKey = todayDayKey();
+  let streakBonus = 0;
+
+  if (lastActiveDayKey !== todayKey) {
+    if (lastActiveDayKey === null) {
+      streakCount = 1;
+    } else {
+      const diffDays = Math.round((dayKeyToMidnight(todayKey) - dayKeyToMidnight(lastActiveDayKey)) / 86400000);
+      streakCount = (diffDays === 1) ? streakCount + 1 : 1;
+    }
+    lastActiveDayKey = todayKey;
+    streakBonus = STREAK_BASE_EXP + STREAK_EXP_STEP * (streakCount - 1);
+  }
+
+  const questionExp = calculateQuestionExp(text);
+  const leveledA = awardExp(questionExp);
+  const leveledB = streakBonus > 0 ? awardExp(streakBonus) : false;
+
+  renderLevelChip();
+  if (leveledA || leveledB) flashLevelUp();
+  saveState();
+}
+
+// A repeat (or close rewording) of a question already asked anywhere in
+// this account's conversations doesn't earn EXP again — otherwise the
+// same message, sent over and over (even in a different conversation),
+// would be a free way to farm levels.
+function normalizeForCompare(text) {
+  return text.trim().toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Filtered out before comparing, so two genuinely different questions
+// that happen to share a common template ("what is the capital of
+// France?" vs "...of Germany?") aren't mistaken for near-duplicates —
+// only the words that actually carry meaning are compared.
+const COMPARE_STOPWORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being',
+  'what', 'whats', 'when', 'where', 'who', 'whom', 'why', 'how', 'which',
+  'can', 'cant', 'could', 'would', 'wouldnt', 'should', 'shouldnt', 'will', 'wont', 'shall',
+  'do', 'dont', 'does', 'doesnt', 'did', 'didnt', 'have', 'havent', 'has', 'hasnt', 'had', 'hadnt',
+  'of', 'to', 'in', 'on', 'at', 'for', 'with', 'about', 'as', 'by', 'from', 'into', 'onto',
+  'and', 'or', 'but', 'if', 'not', 'no', 'so', 'than', 'then', 'that', 'this', 'these', 'those',
+  'you', 'your', 'yours', 'i', 'im', 'me', 'my', 'mine', 'we', 'our', 'ours', 'it', 'its',
+  'he', 'him', 'his', 'she', 'her', 'hers', 'they', 'them', 'their',
+  'please', 'tell', 'give', 'some', 'any', 'also',
+]);
+
+function contentWords(text) {
+  return text.split(' ').filter((w) => w && !COMPARE_STOPWORDS.has(w));
+}
+
+// Plain word-overlap ratio (Jaccard similarity) on the remaining content
+// words. It's a heuristic, not true semantic matching — good enough to
+// catch minor rewordings/punctuation/typo differences without needing a
+// model call, while leaving genuinely different questions alone.
+function wordSimilarity(a, b) {
+  const wordsA = new Set(contentWords(a));
+  const wordsB = new Set(contentWords(b));
+  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+  let intersection = 0;
+  wordsA.forEach((w) => { if (wordsB.has(w)) intersection++; });
+  const union = new Set([...wordsA, ...wordsB]).size;
+  return intersection / union;
+}
+
+const SIMILARITY_THRESHOLD = 0.6;
+
+function isDuplicateQuestion(text) {
+  const normalized = normalizeForCompare(text);
+  for (const c of conversations) {
+    for (const m of c.messages) {
+      if (m.role !== 'user') continue;
+      const otherNormalized = normalizeForCompare(m.content);
+      if (otherNormalized === normalized) return true;
+      if (wordSimilarity(normalized, otherNormalized) >= SIMILARITY_THRESHOLD) return true;
+    }
+  }
+  return false;
+}
+
+// If the reply looks like a refusal (the model declined the request),
+// no EXP is awarded for that question either — this only checks the
+// model's own response text, it doesn't change what the model will or
+// won't answer.
+function looksLikeRefusal(replyText) {
+  const t = String(replyText).toLowerCase();
+  const refusalSignals = [
+    "i cannot provide", "i can't provide", "i cannot help with", "i can't help with",
+    "i cannot assist", "i can't assist", "i'm not able to help", "i am not able to help",
+    "i cannot fulfill", "i can't fulfill", "i won't provide", "i will not provide",
+    "i cannot generate", "i can't generate", "i cannot create", "i can't create",
+    "i'm unable to", "i am unable to", "i must decline", "i cannot comply",
+    "against my guidelines", "not something i can help with",
+  ];
+  return refusalSignals.some((s) => t.includes(s));
+}
+
+let searchEnabled = false;
+const WEEKLY_SEARCH_CREDITS = 10;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+let searchCredits = WEEKLY_SEARCH_CREDITS;
+let creditsWeekStart = Date.now();
+
+let engine = null;
+let cpuGenerator = null;
+let engineMode = 'webgpu';
+let forceCpuMode = false;
+
+// ======================================================================
+// Smart Auto: pipeline routing (classify the message -> pick the
+// best-suited already-supported model -> generate with it).
+// No extra model download is needed just to classify; it's plain
+// pattern-matching on the message text, so it costs nothing to run.
+// ======================================================================
+// Small local models often lean on crude keyword-matching for safety,
+// which causes false-positive refusals on completely ordinary questions
+// (e.g. news/politics containing words like "fire," "attack," or a country
+// name). This steers the model to judge what a request is actually asking
+// for rather than reacting to individual words, while still declining
+// requests that are genuinely asking for help with violence, weapons, or
+// illegal acts. It's a false-positive fix, not a jailbreak — the model
+// still declines real harm categories, and PotatoPowered's own EXP system
+// (below) separately checks for refusals and withholds EXP for them.
+const BASE_SYSTEM_PROMPT = "You are a helpful, factual assistant. Judge each request on what it is actually asking for, not on the presence of any individual word. Answer ordinary questions about news, politics, history, science, and everyday topics directly and factually — including ones that mention words like conflict, war, attack, fire, weapons, or a country's name, since these are almost always asked in a normal informational context. Only decline requests that clearly and specifically ask for help committing violence, building weapons or dangerous devices, writing malware, or otherwise doing something illegal or dangerous — and keep any such decline brief rather than a long refusal.";
+
+// ======================================================================
+// Cross-conversation memory
+// Each conversation's own history was already sent to the model, but
+// separate conversations were fully isolated from each other — a fact
+// mentioned in one thread was invisible in a new one. This pulls a
+// bounded, most-recent window of messages from the account's OTHER
+// conversations and folds it into the system message, so the model can
+// recall things like a stated name or preference across threads. It's
+// a recency window, not true fact-extraction — capped in both message
+// count and character length so it can't blow out a small model's
+// context window as conversations pile up.
+// ======================================================================
+const MEMORY_CONTEXT_MAX_MESSAGES = 20;
+const MEMORY_CONTEXT_MAX_CHARS = 3000;
+
+function getRecentCrossConversationMessages(excludeConvoId) {
+  const all = [];
+  conversations.forEach((c) => {
+    if (c.id === excludeConvoId) return;
+    c.messages.forEach((m) => {
+      all.push({ role: m.role, content: m.content, ts: m.ts || 0 });
+    });
+  });
+  all.sort((a, b) => b.ts - a.ts); // most recent first
+  return all.slice(0, MEMORY_CONTEXT_MAX_MESSAGES);
+}
+
+function buildMemoryContext(excludeConvoId) {
+  const recent = getRecentCrossConversationMessages(excludeConvoId);
+  if (!recent.length) return null;
+
+  const lines = [];
+  let totalChars = 0;
+  for (const m of recent) {
+    const line = `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`;
+    if (totalChars + line.length > MEMORY_CONTEXT_MAX_CHARS) break;
+    lines.push(line);
+    totalChars += line.length;
+  }
+  if (!lines.length) return null;
+  lines.reverse(); // restore chronological order
+
+  return "Here is relevant recent context from the user's OTHER conversations with you (not this one). Use it to recall facts they've told you before if relevant to their current message. Don't mention that this came from \"another conversation\"; just use it naturally, the way someone who remembered a past chat would:\n\n" + lines.join('\n');
+}
+
+// ======================================================================
+// True fact extraction
+// Rather than only reusing a raw window of recent messages, this asks
+// the already-loaded model itself to pull out durable facts from each
+// qualifying message ("User's name is Alex," "User's favorite number is
+// 7") and stores them as their own persisted list — genuine extraction,
+// not just replaying old text. It costs one extra, short generation per
+// qualifying message, so it's skipped for very short messages, repeats,
+// refusals, and incognito sessions.
+// ======================================================================
+let memoryFacts = []; // [{ text, ts }]
+const MAX_STORED_FACTS = 60;
+const FACTS_CONTEXT_MAX_CHARS = 1500;
+const MIN_WORDS_FOR_EXTRACTION = 4;
+
+function factExtractionPrompt(userText) {
+  return `Extract any new durable facts about the user from their message below — things like their name, a stated preference or favorite, their occupation, location, or an ongoing personal detail. Only extract things genuinely about them as a person, not general-knowledge questions they're asking you. If there's nothing worth remembering long-term, respond with exactly: NONE
+
+Example:
+User's message: "My favorite color is blue and I work as a nurse."
+Response:
+- User's favorite color is blue
+- User works as a nurse
+
+Now do the same for this message. Do not answer or comment on it — only extract facts from it, in the same format as the example above.
+User's message: "${userText}"
+
+Respond with one fact per line, each line starting with "- ". Keep each fact short (under 12 words). Nothing else — no preamble, no explanation.`;
+}
+
+function parseExtractedFacts(raw) {
+  if (!raw) return [];
+  const trimmed = raw.trim();
+  if (!trimmed || /^none\b/i.test(trimmed)) return [];
+
+  const lines = trimmed.split('\n').map((l) => l.trim()).filter(Boolean);
+  const preambleSignals = /^(sure|here|okay|ok|extracted|note|based on|response|example)\b/i;
+
+  // Strict pass: lines that actually used the requested bullet format.
+  let facts = lines
+    .filter((l) => /^[-*•]\s*/.test(l))
+    .map((l) => l.replace(/^[-*•]\s*/, '').trim());
+
+  // Small models often ignore the bullet formatting even when the content
+  // itself is fine — rather than discard the whole response, fall back to
+  // treating short, non-preamble lines as candidate facts.
+  if (facts.length === 0) {
+    facts = lines.filter((l) => !preambleSignals.test(l)).map((l) => l.replace(/^["']|["']$/g, '').trim());
+  }
+
+  return facts.filter((f) => f.length > 0 && f.length < 150 && !/^none$/i.test(f));
+}
+
+function isFactAlreadyKnown(newFactText) {
+  const normalized = normalizeForCompare(newFactText);
+  return memoryFacts.some((f) => {
+    const existingNormalized = normalizeForCompare(f.text);
+    return existingNormalized === normalized || wordSimilarity(normalized, existingNormalized) >= SIMILARITY_THRESHOLD;
+  });
+}
+
+async function runExtractionPrompt(prompt) {
+  if (engineMode === 'cpu') {
+    if (!cpuGenerator) return '';
+    const result = await cpuGenerator([{ role: 'user', content: prompt }], {
+      max_new_tokens: 150,
+      temperature: 0.3,
+      do_sample: true,
+    });
+    const generated = result[0]?.generated_text;
+    if (Array.isArray(generated)) {
+      const last = generated[generated.length - 1];
+      return (last && last.content) ? last.content : String(generated);
+    }
+    return String(generated || '');
+  }
+  if (!engine) return '';
+  const res = await engine.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    stream: false,
+    temperature: 0.3,
+    max_tokens: 150,
+  });
+  return res.choices?.[0]?.message?.content || '';
+}
+
+async function extractFacts(userText) {
+  if (userText.trim().split(/\s+/).filter(Boolean).length < MIN_WORDS_FOR_EXTRACTION) return;
+  try {
+    const raw = await runExtractionPrompt(factExtractionPrompt(userText));
+    console.log('[Memory] raw extraction response:', raw);
+    const facts = parseExtractedFacts(raw);
+    console.log('[Memory] parsed facts:', facts);
+    let added = false;
+    facts.forEach((f) => {
+      if (!isFactAlreadyKnown(f)) {
+        memoryFacts.push({ text: f, ts: Date.now() });
+        added = true;
+      }
+    });
+    if (memoryFacts.length > MAX_STORED_FACTS) {
+      memoryFacts.sort((a, b) => b.ts - a.ts);
+      memoryFacts = memoryFacts.slice(0, MAX_STORED_FACTS);
+    }
+    if (added) {
+      saveState();
+      renderMemoryPanel();
+    }
+  } catch (err) {
+    // Extraction is a best-effort background enhancement — never let a
+    // failure here surface as a broken chat.
+    console.error('Fact extraction failed silently:', err);
+  }
+}
+
+function buildFactsContext() {
+  if (!memoryFacts.length) return null;
+  const sorted = [...memoryFacts].sort((a, b) => b.ts - a.ts);
+  const lines = [];
+  let totalChars = 0;
+  for (const f of sorted) {
+    const line = '- ' + f.text;
+    if (totalChars + line.length > FACTS_CONTEXT_MAX_CHARS) break;
+    lines.push(line);
+    totalChars += line.length;
+  }
+  if (!lines.length) return null;
+  return "Things the user has told you in past conversations that are worth remembering:\n" + lines.join('\n') + "\n\nUse these naturally if relevant to their current message — don't just recite them unprompted.";
+}
+
+function renderMemoryPanel() {
+  memoryList.innerHTML = '';
+  const sorted = [...memoryFacts].sort((a, b) => b.ts - a.ts);
+  memoryEmptyNote.style.display = sorted.length ? 'none' : '';
+  sorted.forEach((f) => {
+    const row = document.createElement('div');
+    row.className = 'memory-item';
+    row.innerHTML = `<span class="memory-item-text"></span><button type="button" class="memory-item-del" title="Forget this">✕</button>`;
+    row.querySelector('.memory-item-text').textContent = f.text;
+    row.querySelector('.memory-item-del').addEventListener('click', () => {
+      memoryFacts = memoryFacts.filter((x) => x !== f);
+      renderMemoryPanel();
+      saveState();
+    });
+    memoryList.appendChild(row);
+  });
+}
+
+function openMemoryPanel() {
+  renderMemoryPanel();
+  memoryPanel.classList.add('open');
+  memoryBackdrop.classList.add('show');
+}
+function closeMemoryPanel() {
+  memoryPanel.classList.remove('open');
+  memoryBackdrop.classList.remove('show');
+}
+memoryBtn.addEventListener('click', openMemoryPanel);
+memoryCloseBtn.addEventListener('click', closeMemoryPanel);
+memoryBackdrop.addEventListener('click', closeMemoryPanel);
+memoryClearBtn.addEventListener('click', () => {
+  memoryFacts = [];
+  renderMemoryPanel();
+  saveState();
+});
+
+function buildSystemMessage(convoId, searchContext) {
+  const parts = [BASE_SYSTEM_PROMPT];
+  const factsContext = buildFactsContext();
+  if (factsContext) parts.push(factsContext);
+  const memoryContext = buildMemoryContext(convoId);
+  if (memoryContext) parts.push(memoryContext);
+  if (searchContext) parts.push(searchContext);
+  return parts.join('\n\n');
+}
+
+const AUTO_ROUTES = {
+  quick:     { model: 'SmolLM2-360M-Instruct-q4f16_1-MLC', label: 'SmolLM2 360M', tier: 'light' },
+  general:   { model: 'Llama-3.2-3B-Instruct-q4f16_1-MLC', label: 'Llama 3.2 3B', tier: 'light' },
+  code:      { model: 'Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC', label: 'Qwen 2.5 Coder 3B', tier: 'light' },
+  reasoning: { model: 'DeepSeek-R1-Distill-Llama-8B-q4f16_1-MLC', label: 'DeepSeek R1 Distill 8B', tier: 'heavy' },
+};
+
+let autoModeActive = false;
+let autoCurrentBucket = null;
+let autoDowngraded = false; // true once a heavy model has failed to load on this device this session
+
+function classifyTask(text) {
+  const t = text.toLowerCase();
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+
+  const codeSignals = /```|\bfunction\b|\bdef |\bclass \w|<\/?[a-z]+>|\bpython\b|\bjavascript\b|\btypescript\b|\bhtml\b|\bcss\b|\bsql\b|\bregex\b|\bapi\b|\bcode\b|\bdebug\b|\bbug\b|\bcompile\b|\bvariable\b|\bsyntax\b|\balgorithm\b|\bscript\b/;
+  const reasoningSignals = /\bsolve\b|\bcalculate\b|\bproof\b|\blogic(al)?\b|step by step|\breasoning\b|\bmath\b|\bequation\b|\bpuzzle\b|\bderive\b|how many|what is \d|\d+\s*[\+\-\*\/]\s*\d/;
+
+  if (codeSignals.test(t)) return 'code';
+  if (reasoningSignals.test(t)) return 'reasoning';
+  if (wordCount <= 5) return 'quick';
+  return 'general';
+}
+
+function targetRouteFor(bucket) {
+  const route = AUTO_ROUTES[bucket];
+  if (route.tier === 'heavy' && autoDowngraded) return AUTO_ROUTES.general;
+  return route;
+}
+
+function activeModelLabel() {
+  if (autoModeActive && autoCurrentBucket) {
+    return `${AUTO_ROUTES[autoCurrentBucket].label} (Auto)`;
+  }
+  return modelSelect.options[modelSelect.selectedIndex].text;
+}
+
+function updateAutoBadge() {
+  if (autoModeActive && autoCurrentBucket) {
+    autoBadge.textContent = `Auto → ${AUTO_ROUTES[autoCurrentBucket].label}`;
+    autoBadge.style.display = '';
+  } else {
+    autoBadge.style.display = 'none';
+  }
+}
+let generating = false;
+let currentUser = null;
+let isIncognito = false;
+let conversations = [];
+let activeId = null;
+let authMode = 'signin';
+
+if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+  authConfigWarning.style.display = 'block';
+}
+
+// ======================================================================
+// Auth
+// ======================================================================
+function authErrorMessage(err) {
+  const map = {
+    'auth/email-already-in-use': "That email already has an account — try signing in instead.",
+    'auth/invalid-email': "That email address doesn't look right.",
+    'auth/weak-password': "Password should be at least 6 characters.",
+    'auth/user-not-found': "No account found with that email.",
+    'auth/wrong-password': "Incorrect password.",
+    'auth/invalid-credential': "Incorrect email or password.",
+    'auth/missing-password': "Enter a password.",
+    'auth/too-many-requests': "Too many attempts — wait a moment and try again.",
+    'auth/network-request-failed': "Network error — check your connection.",
+    'auth/popup-closed-by-user': "Sign-in was closed before finishing — try again.",
+    'auth/popup-blocked': "Your browser blocked the sign-in popup — allow popups for this site and try again.",
+    'auth/cancelled-popup-request': "Sign-in was interrupted — try again.",
+    'auth/account-exists-with-different-credential': "That email is already linked to a different sign-in method.",
+    'auth/unauthorized-domain': "This domain isn't authorized in Firebase yet — add it under Authentication → Settings → Authorized domains.",
+  };
+  return map[err.code] || (err.message || "Something went wrong.");
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  tabSignin.classList.toggle('active', mode === 'signin');
+  tabSignup.classList.toggle('active', mode === 'signup');
+  authSubmit.textContent = mode === 'signin' ? 'Sign in' : 'Create account';
+  authPassword.autocomplete = mode === 'signin' ? 'current-password' : 'new-password';
+  authError.textContent = '';
+}
+tabSignin.addEventListener('click', () => setAuthMode('signin'));
+tabSignup.addEventListener('click', () => setAuthMode('signup'));
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  authError.textContent = '';
+  authSubmit.disabled = true;
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+  try {
+    if (authMode === 'signin') {
+      await signInWithEmailAndPassword(auth, email, password);
+    } else {
+      await createUserWithEmailAndPassword(auth, email, password);
+    }
+    authForm.reset();
+  } catch (err) {
+    authError.textContent = authErrorMessage(err);
+  } finally {
+    authSubmit.disabled = false;
+  }
+});
+
+// ======================================================================
+// Incognito mode — deliberately never sets currentUser. Every save/sync
+// function in this file already guards on "if (!currentUser) return",
+// so simply staying signed-out-but-in-the-app means nothing here ever
+// touches localStorage or Firestore. Search is explicitly turned off
+// and hidden too, per its own separate requirement.
+// ======================================================================
+function enterIncognitoMode() {
+  isIncognito = true;
+  currentUser = null;
+
+  conversations = [{ id: genId(), name: 'New chat', messages: [] }];
+  activeId = conversations[0].id;
+
+  bgColor = DEFAULT_BG;
+  userFont = DEFAULT_FONT;
+  assistantFont = DEFAULT_FONT;
+  userTextColor = DEFAULT_TEXT_COLOR;
+  assistantTextColor = DEFAULT_TEXT_COLOR;
+  userNameFont = DEFAULT_NAME_FONT;
+  assistantNameFont = DEFAULT_NAME_FONT;
+  userNameColor = DEFAULT_USER_NAME_COLOR;
+  assistantNameColor = DEFAULT_ASSISTANT_NAME_COLOR;
+  speechRate = DEFAULT_SPEECH_RATE;
+  applyAppearance();
+
+  searchEnabled = false;
+  searchToggle.classList.remove('active');
+  searchToggle.style.display = 'none';
+
+  userLevel = 0;
+  levelExp = 0;
+  levelExpNeeded = 10000;
+  ascensionTier = 0;
+  pendingAscension = false;
+  streakCount = 0;
+  lastActiveDayKey = null;
+  levelChip.style.display = 'none';
+  memoryFacts = [];
+  closeMemoryPanel();
+
+  authScreen.style.display = 'none';
+  appScreen.style.display = 'flex';
+  userEmailEl.textContent = '🕶️ Incognito Mode';
+  signOutBtn.title = 'Exit incognito';
+
+  renderSidebar();
+  renderConversationMessages();
+}
+incognitoBtn.addEventListener('click', enterIncognitoMode);
+
+signOutBtn.addEventListener('click', () => {
+  // Incognito never actually signed in to Firebase, so there's nothing
+  // for signOut(auth) to do — a full reload is the clean way out,
+  // guaranteeing no incognito state can leak into a later real session.
+  if (isIncognito) {
+    location.reload();
+  } else {
+    signOut(auth);
+  }
+});
+
+googleBtn.addEventListener('click', async () => {
+  authError.textContent = '';
+  googleBtn.disabled = true;
+  try {
+    await signInWithPopup(auth, googleProvider);
+  } catch (err) {
+    authError.textContent = authErrorMessage(err);
+  } finally {
+    googleBtn.disabled = false;
+  }
+});
+
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  if (user) {
+    authScreen.style.display = 'none';
+    appScreen.style.display = 'flex';
+    userEmailEl.textContent = user.email || '';
+    systemNote.style.display = '';
+    systemNote.innerHTML = "<b>Loading your conversations…</b>";
+    loadState().then(() => {
+      renderSidebar();
+      renderConversationMessages();
+    });
+  } else {
+    appScreen.style.display = 'none';
+    authScreen.style.display = 'flex';
+    conversations = [];
+    activeId = null;
+    searchEnabled = false;
+    searchToggle.classList.remove('active');
+    bgColor = DEFAULT_BG;
+    userFont = DEFAULT_FONT;
+    assistantFont = DEFAULT_FONT;
+    userTextColor = DEFAULT_TEXT_COLOR;
+    assistantTextColor = DEFAULT_TEXT_COLOR;
+    userNameFont = DEFAULT_NAME_FONT;
+    assistantNameFont = DEFAULT_NAME_FONT;
+    userNameColor = DEFAULT_USER_NAME_COLOR;
+    assistantNameColor = DEFAULT_ASSISTANT_NAME_COLOR;
+    speechRate = DEFAULT_SPEECH_RATE;
+    applyAppearance();
+    userLevel = 0;
+    levelExp = 0;
+    levelExpNeeded = 10000;
+    ascensionTier = 0;
+    pendingAscension = false;
+    streakCount = 0;
+    lastActiveDayKey = null;
+    levelChip.style.display = '';
+    renderLevelChip();
+    memoryFacts = [];
+    closeMemoryPanel();
+    closeCustomizePanel();
+  }
+});
+
+// ======================================================================
+// Conversation storage (scoped per signed-in user, kept in this browser)
+// ======================================================================
+// ======================================================================
+// Conversation + credits storage
+// Firestore is the source of truth (syncs across browsers/devices).
+// localStorage is kept as an instant local cache + offline fallback.
+// ======================================================================
+function genId() { return Math.random().toString(36).slice(2, 10); }
+
+function storageKey(suffix) {
+  return `pp_${suffix}_${currentUser.uid}`;
+}
+
+function userDocRef() {
+  return doc(db, 'ppUsers', currentUser.uid);
+}
+
+function saveLocalOnly() {
+  localStorage.setItem(storageKey('conversations'), JSON.stringify(conversations));
+  localStorage.setItem(storageKey('active'), activeId);
+  localStorage.setItem(
+    storageKey('credits'),
+    JSON.stringify({ count: searchCredits, weekStart: creditsWeekStart })
+  );
+  localStorage.setItem(
+    storageKey('prefs'),
+    JSON.stringify({ bgColor, userFont, assistantFont, userTextColor, assistantTextColor, userNameFont, assistantNameFont, userNameColor, assistantNameColor, speechRate })
+  );
+  localStorage.setItem(
+    storageKey('stats'),
+    JSON.stringify({ level: userLevel, levelExp, levelExpNeeded, ascensionTier, pendingAscension, streakCount, lastActiveDayKey })
+  );
+  localStorage.setItem(storageKey('facts'), JSON.stringify(memoryFacts));
+}
+
+async function syncToCloud() {
+  if (!currentUser) return;
+  try {
+    await setDoc(
+      userDocRef(),
+      {
+        conversations,
+        activeId,
+        credits: { count: searchCredits, weekStart: creditsWeekStart },
+        prefs: { bgColor, userFont, assistantFont, userTextColor, assistantTextColor, userNameFont, assistantNameFont, userNameColor, assistantNameColor, speechRate },
+        stats: { level: userLevel, levelExp, levelExpNeeded, ascensionTier, pendingAscension, streakCount, lastActiveDayKey },
+        memoryFacts,
+        updatedAt: Date.now(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    // Offline, permission issue, or Firestore not enabled yet — fail quietly.
+    // The local copy still has the data, so nothing is lost; it just
+    // won't be visible on other devices until the next successful sync.
+    console.error('Cloud sync failed (data is still saved locally):', err);
+  }
+}
+
+function saveState() {
+  if (!currentUser) return;
+  saveLocalOnly();
+  syncToCloud();
+}
+
+function saveCredits() {
+  if (!currentUser) return;
+  saveLocalOnly();
+  syncToCloud();
+}
+
+function loadLocalOnly() {
+  try {
+    const raw = localStorage.getItem(storageKey('conversations'));
+    conversations = raw ? JSON.parse(raw) : [];
+  } catch {
+    conversations = [];
+  }
+  if (!conversations.length) {
+    conversations = [{ id: genId(), name: 'New chat', messages: [] }];
+  }
+  activeId = localStorage.getItem(storageKey('active'));
+  if (!conversations.find((c) => c.id === activeId)) {
+    activeId = conversations[0].id;
+  }
+
+  let stored = null;
+  try {
+    const raw = localStorage.getItem(storageKey('credits'));
+    stored = raw ? JSON.parse(raw) : null;
+  } catch {
+    stored = null;
+  }
+  const now = Date.now();
+  if (!stored || typeof stored.count !== 'number' || !stored.weekStart || now - stored.weekStart >= WEEK_MS) {
+    searchCredits = WEEKLY_SEARCH_CREDITS;
+    creditsWeekStart = now;
+  } else {
+    searchCredits = stored.count;
+    creditsWeekStart = stored.weekStart;
+  }
+
+  let storedPrefs = null;
+  try {
+    const raw = localStorage.getItem(storageKey('prefs'));
+    storedPrefs = raw ? JSON.parse(raw) : null;
+  } catch {
+    storedPrefs = null;
+  }
+  bgColor = (storedPrefs && storedPrefs.bgColor) || DEFAULT_BG;
+  userFont = (storedPrefs && storedPrefs.userFont) || DEFAULT_FONT;
+  assistantFont = (storedPrefs && storedPrefs.assistantFont) || DEFAULT_FONT;
+  userTextColor = (storedPrefs && storedPrefs.userTextColor) || DEFAULT_TEXT_COLOR;
+  assistantTextColor = (storedPrefs && storedPrefs.assistantTextColor) || DEFAULT_TEXT_COLOR;
+  userNameFont = (storedPrefs && storedPrefs.userNameFont) || DEFAULT_NAME_FONT;
+  assistantNameFont = (storedPrefs && storedPrefs.assistantNameFont) || DEFAULT_NAME_FONT;
+  userNameColor = (storedPrefs && storedPrefs.userNameColor) || DEFAULT_USER_NAME_COLOR;
+  assistantNameColor = (storedPrefs && storedPrefs.assistantNameColor) || DEFAULT_ASSISTANT_NAME_COLOR;
+  speechRate = (storedPrefs && typeof storedPrefs.speechRate === 'number') ? storedPrefs.speechRate : DEFAULT_SPEECH_RATE;
+
+  let storedStats = null;
+  try {
+    const raw = localStorage.getItem(storageKey('stats'));
+    storedStats = raw ? JSON.parse(raw) : null;
+  } catch {
+    storedStats = null;
+  }
+  userLevel = (storedStats && typeof storedStats.level === 'number') ? storedStats.level : 0;
+  levelExp = (storedStats && typeof storedStats.levelExp === 'number') ? storedStats.levelExp : 0;
+  ascensionTier = (storedStats && typeof storedStats.ascensionTier === 'number') ? storedStats.ascensionTier : 0;
+  pendingAscension = (storedStats && typeof storedStats.pendingAscension === 'boolean') ? storedStats.pendingAscension : false;
+  levelExpNeeded = (storedStats && typeof storedStats.levelExpNeeded === 'number') ? storedStats.levelExpNeeded : legacyExpNeededForLevel(userLevel);
+  streakCount = (storedStats && typeof storedStats.streakCount === 'number') ? storedStats.streakCount : 0;
+  lastActiveDayKey = (storedStats && storedStats.lastActiveDayKey) || null;
+
+  try {
+    const rawFacts = localStorage.getItem(storageKey('facts'));
+    memoryFacts = rawFacts ? JSON.parse(rawFacts) : [];
+  } catch {
+    memoryFacts = [];
+  }
+}
+
+function renderCreditsBadge() {
+  searchCreditsEl.textContent = searchCredits;
+  searchToggle.classList.toggle('depleted', searchCredits <= 0);
+  if (searchCredits <= 0 && searchEnabled) {
+    searchEnabled = false;
+    searchToggle.classList.remove('active');
+    searchToggle.title = 'Web search: off';
+  }
+}
+
+async function loadState() {
+  if (!currentUser) return;
+
+  let cloudData = null;
+  try {
+    const snap = await getDoc(userDocRef());
+    if (snap.exists()) cloudData = snap.data();
+  } catch (err) {
+    console.error('Cloud load failed, falling back to this device\'s local data:', err);
+  }
+
+  if (cloudData) {
+    conversations = Array.isArray(cloudData.conversations) && cloudData.conversations.length
+      ? cloudData.conversations
+      : [{ id: genId(), name: 'New chat', messages: [] }];
+    activeId = cloudData.activeId;
+    if (!conversations.find((c) => c.id === activeId)) {
+      activeId = conversations[0].id;
+    }
+
+    const now = Date.now();
+    const credits = cloudData.credits;
+    if (credits && typeof credits.count === 'number' && credits.weekStart && now - credits.weekStart < WEEK_MS) {
+      searchCredits = credits.count;
+      creditsWeekStart = credits.weekStart;
+    } else {
+      searchCredits = WEEKLY_SEARCH_CREDITS;
+      creditsWeekStart = now;
+    }
+
+    const prefs = cloudData.prefs;
+    bgColor = (prefs && prefs.bgColor) || DEFAULT_BG;
+    userFont = (prefs && prefs.userFont) || DEFAULT_FONT;
+    assistantFont = (prefs && prefs.assistantFont) || DEFAULT_FONT;
+    userTextColor = (prefs && prefs.userTextColor) || DEFAULT_TEXT_COLOR;
+    assistantTextColor = (prefs && prefs.assistantTextColor) || DEFAULT_TEXT_COLOR;
+    userNameFont = (prefs && prefs.userNameFont) || DEFAULT_NAME_FONT;
+    assistantNameFont = (prefs && prefs.assistantNameFont) || DEFAULT_NAME_FONT;
+    userNameColor = (prefs && prefs.userNameColor) || DEFAULT_USER_NAME_COLOR;
+    assistantNameColor = (prefs && prefs.assistantNameColor) || DEFAULT_ASSISTANT_NAME_COLOR;
+    speechRate = (prefs && typeof prefs.speechRate === 'number') ? prefs.speechRate : DEFAULT_SPEECH_RATE;
+
+    const stats = cloudData.stats;
+    userLevel = (stats && typeof stats.level === 'number') ? stats.level : 0;
+    levelExp = (stats && typeof stats.levelExp === 'number') ? stats.levelExp : 0;
+    ascensionTier = (stats && typeof stats.ascensionTier === 'number') ? stats.ascensionTier : 0;
+    pendingAscension = (stats && typeof stats.pendingAscension === 'boolean') ? stats.pendingAscension : false;
+    levelExpNeeded = (stats && typeof stats.levelExpNeeded === 'number') ? stats.levelExpNeeded : legacyExpNeededForLevel(userLevel);
+    streakCount = (stats && typeof stats.streakCount === 'number') ? stats.streakCount : 0;
+    lastActiveDayKey = (stats && stats.lastActiveDayKey) || null;
+    memoryFacts = Array.isArray(cloudData.memoryFacts) ? cloudData.memoryFacts : [];
+
+    saveLocalOnly(); // keep this device's cache in sync with the cloud
+  } else {
+    // No cloud record yet for this account — this is either a brand-new
+    // user, or Firestore couldn't be reached. Fall back to whatever this
+    // browser already has locally (so existing history isn't lost), then
+    // push it up to seed the cloud copy for next time.
+    loadLocalOnly();
+    syncToCloud();
+  }
+
+  applyAppearance();
+  renderCreditsBadge();
+  renderLevelChip();
+}
+
+function getActiveConversation() {
+  return conversations.find((c) => c.id === activeId);
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+function renderSidebar() {
+  convoList.innerHTML = '';
+  conversations.forEach((c) => {
+    const row = document.createElement('div');
+    row.className = 'convo-row' + (c.id === activeId ? ' active' : '');
+    row.innerHTML = `
+      <span class="convo-name">${escapeHtml(c.name)}</span>
+      <span class="convo-actions">
+        <button class="icon-btn rename-btn" title="Rename">✎</button>
+        <button class="icon-btn delete-btn" title="Delete">✕</button>
+      </span>
+    `;
+    row.querySelector('.convo-name').addEventListener('click', () => switchTo(c.id));
+    row.querySelector('.rename-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      startRename(c.id, row);
+    });
+    row.querySelector('.delete-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteConvo(c.id);
+    });
+    convoList.appendChild(row);
+  });
+}
+
+function startRename(id, row) {
+  const c = conversations.find((x) => x.id === id);
+  const nameSpan = row.querySelector('.convo-name');
+  const inputEl = document.createElement('input');
+  inputEl.className = 'convo-rename-input';
+  inputEl.value = c.name;
+  row.replaceChild(inputEl, nameSpan);
+  inputEl.focus();
+  inputEl.select();
+
+  function commit() {
+    const val = inputEl.value.trim() || c.name;
+    c.name = val;
+    saveState();
+    renderSidebar();
+  }
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { renderSidebar(); }
+  });
+  inputEl.addEventListener('blur', commit);
+}
+
+function deleteConvo(id) {
+  if (conversations.length === 1) {
+    const c = conversations[0];
+    c.messages = [];
+    c.name = 'New chat';
+    saveState();
+    renderSidebar();
+    renderConversationMessages();
+    return;
+  }
+  conversations = conversations.filter((c) => c.id !== id);
+  if (activeId === id) activeId = conversations[0].id;
+  saveState();
+  renderSidebar();
+  renderConversationMessages();
+}
+
+function switchTo(id) {
+  if (id === activeId) { closeSidebar(); return; }
+  activeId = id;
+  saveState();
+  renderSidebar();
+  renderConversationMessages();
+  closeSidebar();
+}
+
+newConvoBtn.addEventListener('click', () => {
+  const c = { id: genId(), name: 'New chat', messages: [] };
+  conversations.unshift(c);
+  activeId = c.id;
+  saveState();
+  renderSidebar();
+  renderConversationMessages();
+  closeSidebar();
+  input.focus();
+});
+
+function openSidebar() { sidebar.classList.add('open'); backdrop.classList.add('show'); }
+function closeSidebar() { sidebar.classList.remove('open'); backdrop.classList.remove('show'); }
+panelToggle.addEventListener('click', () => {
+  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+backdrop.addEventListener('click', closeSidebar);
+
+// ======================================================================
+// Chat rendering
+// ======================================================================
+// Renders assistant text into a bubble, putting anything inside ```fences```
+// into its own styled, monospaced code box with a copy button. Everything
+// is HTML-escaped before insertion (including code contents) so nothing the
+// model outputs can be interpreted as live HTML/script — only the wrapper
+// markup below is real HTML.
+function renderMessageContent(el, text) {
+  const parts = String(text).split('```');
+  let html = '';
+  parts.forEach((part, i) => {
+    if (i % 2 === 0) {
+      if (part) html += `<span class="msg-text">${escapeHtml(part)}</span>`;
+    } else {
+      let lang = '';
+      let code = part;
+      const newlineIdx = part.indexOf('\n');
+      if (newlineIdx !== -1) {
+        const firstLine = part.slice(0, newlineIdx).trim();
+        if (firstLine && /^[a-zA-Z0-9_+#.-]+$/.test(firstLine)) {
+          lang = firstLine;
+          code = part.slice(newlineIdx + 1);
+        }
+      }
+      code = code.replace(/\n$/, '');
+      html += `<div class="code-box">
+        <div class="code-box-header">
+          <span class="code-lang">${escapeHtml(lang || 'code')}</span>
+          <button type="button" class="code-copy-btn">Copy</button>
+        </div>
+        <pre class="code-box-pre"><code>${escapeHtml(code)}</code></pre>
+      </div>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+// One delegated listener handles every copy button, including ones added
+// to bubbles created after this listener is attached.
+chatWindow.addEventListener('click', (e) => {
+  const btn = e.target.closest('.code-copy-btn');
+  if (!btn) return;
+  const code = btn.closest('.code-box').querySelector('code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.classList.remove('copied');
+    }, 1500);
+  }).catch(() => {
+    btn.textContent = "Couldn't copy";
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+});
+
+// ======================================================================
+// Voice playback ("play voice" button on each of Potato's replies)
+// Reads directly from the rendered bubble so it always matches what's
+// on screen, skipping code blocks (reading code aloud isn't useful) in
+// favor of a short spoken cue instead.
+// ======================================================================
+let speakingBtn = null;
+
+function stopSpeaking() {
+  if (!ttsSupported) return;
+  window.speechSynthesis.cancel();
+  if (speakingBtn) {
+    speakingBtn.textContent = '🔊';
+    speakingBtn.classList.remove('speaking');
+    speakingBtn = null;
+  }
+}
+
+function extractSpeechText(bubbleEl) {
+  let out = '';
+  bubbleEl.childNodes.forEach((node) => {
+    if (node.nodeType !== 1) return;
+    if (node.classList.contains('msg-text')) {
+      out += node.textContent;
+    } else if (node.classList.contains('code-box')) {
+      out += ' Code block. ';
+    }
+  });
+  return out.trim();
+}
+
+if (ttsSupported) {
+  chatWindow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tts-btn');
+    if (!btn) return;
+
+    if (speakingBtn === btn) {
+      stopSpeaking();
+      return;
+    }
+    stopSpeaking(); // only one reply plays at a time
+
+    const bubble = btn.closest('.msg').querySelector('.bubble');
+    const text = extractSpeechText(bubble);
+    if (!text) return;
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = speechRate;
+    utter.onend = () => { if (speakingBtn === btn) stopSpeaking(); };
+    utter.onerror = () => { if (speakingBtn === btn) stopSpeaking(); };
+    window.speechSynthesis.speak(utter);
+    speakingBtn = btn;
+    btn.textContent = '⏸';
+    btn.classList.add('speaking');
+  });
+}
+
+// ======================================================================
+// Voice input (mic button — speech-to-text into the message box)
+// ======================================================================
+if (sttSupported) {
+  const recognition = new SpeechRecognitionAPI();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  let recognizing = false;
+
+  recognition.onresult = (e) => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    input.value = transcript;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  };
+  recognition.onend = () => {
+    recognizing = false;
+    micBtn.classList.remove('recording');
+  };
+  recognition.onerror = () => {
+    recognizing = false;
+    micBtn.classList.remove('recording');
+  };
+
+  micBtn.addEventListener('click', () => {
+    if (input.disabled) return; // no model loaded yet
+    if (recognizing) {
+      recognition.stop();
+      return;
+    }
+    recognizing = true;
+    micBtn.classList.add('recording');
+    try {
+      recognition.start();
+    } catch {
+      recognizing = false;
+      micBtn.classList.remove('recording');
+    }
+  });
+} else {
+  micBtn.disabled = true;
+  micBtn.title = 'Voice input is not supported in this browser';
+}
+
+function addMessage(role, text) {
+  systemNote.style.display = 'none';
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'assistant') {
+    const ttsBtnHtml = ttsSupported ? `<button type="button" class="tts-btn" title="Play voice">🔊</button>` : '';
+    div.innerHTML = `<div class="role-col"><div class="role">potato</div>${ttsBtnHtml}</div><div class="bubble"></div>`;
+  } else {
+    div.innerHTML = `<div class="role">you</div><div class="bubble"></div>`;
+  }
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  return div.querySelector('.bubble');
+}
+
+function renderConversationMessages() {
+  stopSpeaking();
+  chatWindow.querySelectorAll('.msg').forEach((el) => el.remove());
+  const convo = getActiveConversation();
+  if (!convo || convo.messages.length === 0) {
+    systemNote.style.display = '';
+  } else {
+    systemNote.style.display = 'none';
+    convo.messages.forEach((m) => {
+      const bubble = addMessage(m.role, m.content);
+      if (m.role === 'assistant') {
+        renderMessageContent(bubble, m.content);
+      } else {
+        bubble.textContent = m.content;
+      }
+    });
+  }
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// ======================================================================
+// Web search (via your own Cloudflare Worker, which holds the real key)
+// ======================================================================
+searchToggle.addEventListener('click', () => {
+  if (isIncognito) return; // search is unavailable in incognito, no matter how this gets clicked
+  if (!searchEnabled && SEARCH_WORKER_URL.includes('YOUR-WORKER-URL')) {
+    searchWarning.textContent = "Web search isn't configured yet — set SEARCH_WORKER_URL near the top of the script.";
+    searchWarning.style.display = 'block';
+    return;
+  }
+  if (!searchEnabled && searchCredits <= 0) {
+    searchWarning.textContent = "You're out of search credits for this week — they refresh weekly.";
+    searchWarning.style.display = 'block';
+    return;
+  }
+  searchWarning.style.display = 'none';
+  searchEnabled = !searchEnabled;
+  searchToggle.classList.toggle('active', searchEnabled);
+  searchToggle.title = searchEnabled ? 'Web search: on' : 'Web search: off';
+});
+
+async function fetchSearchResults(query) {
+  const res = await fetch(SEARCH_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) throw new Error('Search request failed');
+  const data = await res.json();
+  return data.results || [];
+}
+
+function formatSearchContext(results) {
+  if (!results.length) return null;
+  const lines = results.map(
+    (r, i) => `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.url}`
+  );
+  return "Here are current web search results that may help answer the user's next message. Use them if relevant, and mention sources when you do:\n\n" + lines.join('\n\n');
+}
+
+// ======================================================================
+// Model loading
+// ======================================================================
+if (!('gpu' in navigator)) {
+  forceCpuMode = true;
+  modelSelect.disabled = true;
+  systemNote.innerHTML = "<b>Your browser doesn't support WebGPU.</b><br>You can still load a lightweight CPU-only model below — replies will be slower, but it'll work on this device.";
+}
+
+function isDeviceCapabilityError(err) {
+  const msg = ((err && err.message) ? err.message : String(err)).toLowerCase();
+  const patterns = [
+    'webgpu', 'requestdevice', 'adapter', 'workgroupstorage',
+    'compute workgroup', 'exceeds limit', 'device lost',
+    'no gpu', 'initialize runtime', 'unsupported limit',
+  ];
+  return patterns.some((p) => msg.includes(p));
+}
+
+const FALLBACK_MODEL = 'onnx-community/gemma-3-270m-it-ONNX';
+
+async function loadFallbackModel() {
+  // Only one model can run in CPU fallback mode, so per-message routing
+  // doesn't apply here — turn off the Auto badge/state if it was on.
+  autoCurrentBucket = null;
+  updateAutoBadge();
+
+  systemNote.style.display = '';
+  systemNote.innerHTML = "<b>This device can't run the GPU model — switching to a lightweight CPU-only mode.</b><br>It's a much smaller model and replies will be slower, but it works on virtually any device.";
+  progressWrap.classList.add('show');
+  progressBar.style.width = '0%';
+
+  try {
+    const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0');
+    cpuGenerator = await pipeline('text-generation', FALLBACK_MODEL, {
+      dtype: 'q8',
+      progress_callback: (p) => {
+        if (p.status === 'progress' && typeof p.progress === 'number') {
+          progressBar.style.width = Math.round(p.progress) + '%';
+        }
+      },
+    });
+
+    engineMode = 'cpu';
+    progressWrap.classList.remove('show');
+    systemNote.innerHTML = "<b>Ready (lightweight mode).</b> Running a small CPU-only model directly on this device — replies will be slower than GPU mode, but it works here.";
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.placeholder = "Say something…";
+    loadBtn.textContent = "Reload";
+    loadBtn.disabled = false;
+    input.focus();
+    renderConversationMessages();
+  } catch (fallbackErr) {
+    systemNote.innerHTML = `<b>Couldn't start lightweight mode either.</b><br>${(fallbackErr && fallbackErr.message) ? fallbackErr.message : fallbackErr}`;
+    loadBtn.disabled = false;
+    modelSelect.disabled = forceCpuMode ? true : false;
+    progressWrap.classList.remove('show');
+  }
+}
+
+loadBtn.addEventListener('click', async () => {
+  loadBtn.disabled = true;
+  modelSelect.disabled = true;
+  progressWrap.classList.add('show');
+  systemNote.style.display = '';
+
+  autoModeActive = modelSelect.value === 'auto';
+  autoCurrentBucket = autoModeActive ? 'general' : null;
+  autoDowngraded = false;
+  updateAutoBadge();
+
+  const modelIdToLoad = autoModeActive ? AUTO_ROUTES.general.model : modelSelect.value;
+
+  if (forceCpuMode) {
+    await loadFallbackModel();
+    return;
+  }
+
+  systemNote.innerHTML = autoModeActive
+    ? "<b>Smart Auto is on.</b><br>Starting with a general-purpose model — I'll switch automatically based on what you ask (code, math/reasoning, or quick replies)."
+    : "<b>Downloading model weights…</b><br>This only happens once — after this they're cached in your browser.";
+
+  try {
+    engine = await webllm.CreateMLCEngine(modelIdToLoad, {
+      initProgressCallback: (p) => {
+        const pct = Math.round((p.progress || 0) * 100);
+        progressBar.style.width = pct + '%';
+        systemNote.innerHTML = `<b>${p.text || 'Loading…'}</b>`;
+      },
+    });
+
+    engineMode = 'webgpu';
+    progressWrap.classList.remove('show');
+    systemNote.innerHTML = `<b>Ready.</b> ${activeModelLabel()} is now running locally in this tab.`;
+    updateAutoBadge();
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.placeholder = "Say something…";
+    loadBtn.textContent = "Reload";
+    loadBtn.disabled = false;
+    input.focus();
+    renderConversationMessages();
+  } catch (err) {
+    if (isDeviceCapabilityError(err)) {
+      forceCpuMode = true;
+      await loadFallbackModel();
+    } else {
+      systemNote.innerHTML = `<b>Couldn't load the model.</b><br>${(err && err.message) ? err.message : err}`;
+      loadBtn.disabled = false;
+      modelSelect.disabled = false;
+      progressWrap.classList.remove('show');
+    }
+  }
+});
+
+
+// ======================================================================
+// Sending messages
+// ======================================================================
+async function send() {
+  const text = input.value.trim();
+  if (!text || generating) return;
+  if (engineMode === 'webgpu' && !engine) return;
+  if (engineMode === 'cpu' && !cpuGenerator) return;
+  const convo = getActiveConversation();
+  if (!convo) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  const isRepeat = isDuplicateQuestion(text);
+  addMessage('user', text).textContent = text;
+  convo.messages.push({ role: 'user', content: text, ts: Date.now() });
+
+  if (convo.name === 'New chat') {
+    convo.name = text.length > 32 ? text.slice(0, 32) + '…' : text;
+    renderSidebar();
+  }
+
+  const bubble = addMessage('assistant', '');
+  generating = true;
+  sendBtn.disabled = true;
+  statusDot.classList.add('live');
+  modelSelect.disabled = true;
+
+  if (autoModeActive && engineMode === 'webgpu') {
+    const bucket = classifyTask(text);
+    const target = targetRouteFor(bucket);
+    const targetBucketKey = (target.tier === 'heavy' && autoDowngraded) ? 'general' : bucket;
+
+    if (target.model !== AUTO_ROUTES[autoCurrentBucket]?.model) {
+      bubble.textContent = `🔀 Switching to ${target.label} for this…`;
+      progressWrap.classList.add('show');
+      progressBar.style.width = '0%';
+      try {
+        await engine.reload(target.model);
+        autoCurrentBucket = targetBucketKey;
+        updateAutoBadge();
+        progressWrap.classList.remove('show');
+        bubble.textContent = '';
+      } catch (switchErr) {
+        progressWrap.classList.remove('show');
+        if (target.tier === 'heavy' && isDeviceCapabilityError(switchErr)) {
+          // This device can't run the heavier model — fall back to the
+          // general-tier model for this and all future auto-routed
+          // messages this session, rather than retrying (and failing) again.
+          autoDowngraded = true;
+          bubble.textContent = `This device can't run ${target.label} — falling back to ${AUTO_ROUTES.general.label} for this and future messages.`;
+          try {
+            await engine.reload(AUTO_ROUTES.general.model);
+            autoCurrentBucket = 'general';
+            updateAutoBadge();
+          } catch (fallbackSwitchErr) {
+            bubble.textContent = "Something went wrong switching models: " + ((fallbackSwitchErr && fallbackSwitchErr.message) ? fallbackSwitchErr.message : fallbackSwitchErr);
+            generating = false;
+            sendBtn.disabled = false;
+            modelSelect.disabled = false;
+            statusDot.classList.remove('live');
+            return;
+          }
+        } else {
+          bubble.textContent = "Something went wrong switching models: " + ((switchErr && switchErr.message) ? switchErr.message : switchErr);
+          generating = false;
+          sendBtn.disabled = false;
+          modelSelect.disabled = false;
+          statusDot.classList.remove('live');
+          return;
+        }
+      }
+    }
+  }
+
+  let messagesForModel = [{ role: 'system', content: buildSystemMessage(convo.id, null) }, ...convo.messages];
+  if (searchEnabled && searchCredits > 0 && !isIncognito) {
+    bubble.textContent = '🔍 Searching the web…';
+    try {
+      const results = await fetchSearchResults(text);
+      const context = formatSearchContext(results);
+      if (context) {
+        messagesForModel = [
+          { role: 'system', content: buildSystemMessage(convo.id, context) },
+          ...convo.messages,
+        ];
+      }
+      // Only spend a credit once the search actually succeeded.
+      searchCredits -= 1;
+      saveCredits();
+      renderCreditsBadge();
+    } catch (searchErr) {
+      // Search failed (Worker not deployed, quota hit, network issue, etc.)
+      // — fall back to answering without search context rather than blocking the chat,
+      // and don't charge a credit for a search that never actually happened.
+    }
+    bubble.textContent = '';
+  }
+
+  if (engineMode === 'cpu') {
+    bubble.textContent = bubble.textContent || '…';
+    try {
+      const result = await cpuGenerator(messagesForModel, {
+        max_new_tokens: 400,
+        temperature: 0.7,
+        do_sample: true,
+      });
+      const generated = result[0]?.generated_text;
+      let replyText;
+      if (Array.isArray(generated)) {
+        const last = generated[generated.length - 1];
+        replyText = (last && last.content) ? last.content : String(generated);
+      } else {
+        replyText = String(generated || '');
+      }
+      renderMessageContent(bubble, replyText);
+      convo.messages.push({ role: 'assistant', content: replyText, ts: Date.now() });
+      const qualifies = !isIncognito && !isRepeat && !looksLikeRefusal(replyText);
+      if (qualifies) registerQuestionAsked(text);
+      saveState();
+      if (qualifies) await extractFacts(text);
+    } catch (err) {
+      bubble.textContent = "Something went wrong generating that reply: " + ((err && err.message) ? err.message : err);
+    } finally {
+      generating = false;
+      sendBtn.disabled = false;
+      modelSelect.disabled = false;
+      statusDot.classList.remove('live');
+      input.focus();
+    }
+    return;
+  }
+
+  let full = '';
+  try {
+    const stream = await engine.chat.completions.create({
+      messages: messagesForModel,
+      stream: true,
+      temperature: 0.7,
+    });
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || '';
+      full += delta;
+      renderMessageContent(bubble, full);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    convo.messages.push({ role: 'assistant', content: full, ts: Date.now() });
+    const qualifies = !isIncognito && !isRepeat && !looksLikeRefusal(full);
+    if (qualifies) registerQuestionAsked(text);
+    saveState();
+    if (qualifies) await extractFacts(text);
+  } catch (err) {
+    bubble.textContent = "Something went wrong generating that reply: " + ((err && err.message) ? err.message : err);
+  } finally {
+    generating = false;
+    sendBtn.disabled = false;
+    modelSelect.disabled = false;
+    statusDot.classList.remove('live');
+    input.focus();
+  }
+}
+
+sendBtn.addEventListener('click', send);
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+});
+</script>
+</body>
+</html>
