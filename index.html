@@ -830,28 +830,6 @@
     0%, 100% { box-shadow:0 0 0 0 rgba(226,102,95,0.5); }
     50% { box-shadow:0 0 0 6px rgba(226,102,95,0); }
   }
-  #imageGenToggle.active{
-    background:#b06bff;
-    border-color:#b06bff;
-    color:#1a1024;
-  }
-  #imageGenToggle.generating{
-    animation:mic-pulse 1.4s ease-in-out infinite;
-  }
-  .generated-image{
-    max-width:100%;
-    width:320px;
-    border-radius:8px;
-    border:1px solid var(--line);
-    display:block;
-    margin-top:6px;
-  }
-  .generated-image-prompt{
-    font-size:12px;
-    color:var(--ink-dim);
-    font-style:italic;
-    margin-bottom:4px;
-  }
   .role-col{
     width:64px;
     flex-shrink:0;
@@ -1199,7 +1177,6 @@
       <button class="search-toggle" id="searchToggle" type="button" title="Web search: off">🔍<span class="search-credits" id="searchCredits">10</span></button>
       <button class="mic-btn" id="micBtn" type="button" title="Voice input">🎤</button>
       <button class="mic-btn" id="uploadBtn" type="button" title="Upload a text file">📁</button>
-      <button class="mic-btn" id="imageGenToggle" type="button" title="Generate an image instead of chatting">🎨</button>
       <input type="file" id="fileInput" style="display:none;" accept=".txt,.md,.markdown,.csv,.json,.js,.ts,.py,.html,.css,.log,.yml,.yaml,.xml">
       <textarea id="input" rows="1" placeholder="Load a model to start chatting…" disabled></textarea>
       <button class="send" id="sendBtn" disabled title="Send">➤</button>
@@ -1323,7 +1300,6 @@ const modelPillBtn = document.getElementById('modelPillBtn');
 const modelPillLabel = document.getElementById('modelPillLabel');
 const modelPopover = document.getElementById('modelPopover');
 const uploadBtn = document.getElementById('uploadBtn');
-const imageGenToggle = document.getElementById('imageGenToggle');
 const fileInput = document.getElementById('fileInput');
 const attachChip = document.getElementById('attachChip');
 const attachChipName = document.getElementById('attachChipName');
@@ -2092,21 +2068,6 @@ attachChipRemove.addEventListener('click', () => {
   attachChip.style.display = 'none';
 });
 
-imageGenToggle.addEventListener('click', () => {
-  imageGenMode = !imageGenMode;
-  imageGenToggle.classList.toggle('active', imageGenMode);
-  const chatReady = !!(engine || cpuGenerator);
-  if (imageGenMode) {
-    input.disabled = false;
-    sendBtn.disabled = false;
-    input.placeholder = 'Describe an image to generate…';
-  } else {
-    input.disabled = !chatReady;
-    sendBtn.disabled = !chatReady;
-    input.placeholder = chatReady ? 'Write a message…' : 'Load a model to start chatting…';
-  }
-});
-
 function buildAttachmentContext(lightweight) {
   if (!pendingAttachment) return null;
   const maxChars = lightweight ? 1200 : 8000;
@@ -2405,25 +2366,10 @@ async function syncToCloud() {
   if (!currentUser) return;
   try {
     // Generated images are stored as base64 data URLs, which can easily
-    // be several hundred KB each — large enough that a conversation with
-    // a few images could exceed Firestore's 1MB-per-document limit and
-    // silently break sync for everything else in this same document.
-    // Images stay fully intact in localStorage (a much larger quota) and
-    // display normally on this device; they just don't follow the
-    // conversation across devices.
-    const conversationsForCloud = conversations.map((c) => ({
-      ...c,
-      messages: c.messages.map((m) => {
-        if (!m.imageDataUrl) return m;
-        const { imageDataUrl, ...rest } = m;
-        return { ...rest, imageOmittedFromSync: true };
-      }),
-    }));
-
     await setDoc(
       userDocRef(),
       {
-        conversations: conversationsForCloud,
+        conversations,
         activeId,
         credits: { count: searchCredits, weekStart: creditsWeekStart },
         prefs: { bgColor, userFont, assistantFont, userTextColor, assistantTextColor, userNameFont, assistantNameFont, userNameColor, assistantNameColor, speechRate },
@@ -2879,14 +2825,6 @@ function addMessage(role, text) {
   return div.querySelector('.bubble');
 }
 
-function renderImageIntoBubble(bubble, dataUrl, prompt) {
-  bubble.innerHTML = `<div class="generated-image-prompt"></div><img class="generated-image" alt="">`;
-  bubble.querySelector('.generated-image-prompt').textContent = prompt;
-  const img = bubble.querySelector('.generated-image');
-  img.src = dataUrl;
-  img.alt = prompt;
-}
-
 function renderConversationMessages() {
   stopSpeaking();
   chatWindow.querySelectorAll('.msg').forEach((el) => el.remove());
@@ -2897,9 +2835,7 @@ function renderConversationMessages() {
     systemNote.style.display = 'none';
     convo.messages.forEach((m) => {
       const bubble = addMessage(m.role, m.content);
-      if (m.imageDataUrl) {
-        renderImageIntoBubble(bubble, m.imageDataUrl, m.imagePrompt || m.content);
-      } else if (m.role === 'assistant') {
+      if (m.role === 'assistant') {
         renderMessageContent(bubble, m.content);
       } else {
         bubble.textContent = m.content;
@@ -2966,123 +2902,6 @@ function isDeviceCapabilityError(err) {
     'no gpu', 'initialize runtime', 'unsupported limit',
   ];
   return patterns.some((p) => msg.includes(p));
-}
-
-// ======================================================================
-// Local image generation (diffusers.js via ONNX Runtime Web + WebGPU)
-//
-// PROJECT HISTORY: this was originally a hand-rolled SD-Turbo pipeline,
-// built directly against ONNX Runtime Web's low-level API since neither
-// WebLLM nor Transformers.js support image generation. After several
-// rounds of hand-derived diffusion math (including a full EDM/Karras
-// preconditioning implementation) produced a pipeline that ran with zero
-// errors and healthy output statistics but still never converged to a
-// coherent image, this switched to a real, maintained library —
-// diffusers.js — that handles the scheduler math, classifier-free
-// guidance, and multi-step denoising internally. Correctness is now the
-// library's responsibility, not hand-derived formulas.
-//
-// HONEST RISK NOTE: diffusers.js's own documented browser usage goes
-// through a bundler (webpack/vite), not a plain CDN <script> tag, which
-// doesn't fit PotatoPowered's single-file architecture. This loads it
-// via jsdelivr's "+esm" endpoint instead, which auto-converts any npm
-// package into a working browser ES module on the fly — a real,
-// documented jsdelivr feature built for exactly this situation, not a
-// guess. Whether the specific package resolves cleanly through it, and
-// the exact shape of what pipe.run() returns, are still untested —
-// every stage logs to the console so a failure is easy to pin down.
-// ======================================================================
-const SD_MODEL_REPO = 'aislamov/stable-diffusion-2-1-base-onnx';
-let sdPipeline = null;
-let imageGenMode = false;
-
-async function ensureImageModelLoaded(onProgress) {
-  if (sdPipeline) return;
-  if (!('gpu' in navigator)) {
-    throw new Error("Image generation needs WebGPU, which this browser/device doesn't support.");
-  }
-
-  onProgress?.('Loading image generation library…');
-  const { DiffusionPipeline } = await import('https://cdn.jsdelivr.net/npm/@aislamov/diffusers.js@latest/+esm');
-  console.log('[ImageGen] diffusers.js loaded');
-
-  onProgress?.('Downloading model (largest one-time download, ~2GB)…');
-  sdPipeline = await DiffusionPipeline.fromPretrained(SD_MODEL_REPO, {
-    progress_callback: (data) => {
-      if (data && typeof data.progress === 'number') {
-        onProgress?.(`Downloading ${data.file || 'model'}… ${Math.round(data.progress)}%`);
-      }
-    },
-  });
-  console.log('[ImageGen] pipeline ready:', sdPipeline);
-}
-
-function sdImageToDataUrl(image) {
-  // diffusers.js's exact return shape for pipe.run() isn't something I
-  // could verify beforehand, so this handles a couple of plausible
-  // tensor layouts defensively. The console log right before this is
-  // called shows the raw object — if this renders incorrectly, that log
-  // line has what's needed to fix the exact shape being handled here.
-  let width = image.width;
-  let height = image.height;
-  let channelsFirst = false;
-  if (image.dims && image.dims.length === 4) {
-    if (image.dims[1] === 3 || image.dims[1] === 4) {
-      channelsFirst = true;
-      height = image.dims[2];
-      width = image.dims[3];
-    } else {
-      height = image.dims[1];
-      width = image.dims[2];
-    }
-  }
-  const data = image.data;
-  const isFloat = data instanceof Float32Array || data instanceof Float64Array;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  const imageData = ctx.createImageData(width, height);
-  const pixelCount = width * height;
-
-  for (let i = 0; i < pixelCount; i++) {
-    let r, g, b;
-    if (channelsFirst) {
-      r = data[i]; g = data[pixelCount + i]; b = data[2 * pixelCount + i];
-    } else {
-      r = data[i * 3]; g = data[i * 3 + 1]; b = data[i * 3 + 2];
-    }
-    if (isFloat) {
-      // Could be [-1,1] or [0,1] depending on the library's output
-      // convention — normalize based on the observed range rather than
-      // assuming one.
-      if (r >= -1 && r <= 1) r = (r + 1) / 2 * 255;
-      if (g >= -1 && g <= 1) g = (g + 1) / 2 * 255;
-      if (b >= -1 && b <= 1) b = (b + 1) / 2 * 255;
-    }
-    imageData.data[i * 4] = Math.max(0, Math.min(255, Math.round(r)));
-    imageData.data[i * 4 + 1] = Math.max(0, Math.min(255, Math.round(g)));
-    imageData.data[i * 4 + 2] = Math.max(0, Math.min(255, Math.round(b)));
-    imageData.data[i * 4 + 3] = 255;
-  }
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL('image/png');
-}
-
-async function generateImage(prompt, onProgress) {
-  await ensureImageModelLoaded(onProgress);
-
-  onProgress?.('Generating (multi-step — this can take a minute or more)…');
-  const result = await sdPipeline.run({
-    prompt,
-    numInferenceSteps: 20,
-    guidanceScale: 7.5,
-  });
-  console.log('[ImageGen] raw generation result:', result);
-
-  const image = Array.isArray(result) ? result[0] : (result.images ? result.images[0] : result);
-  return sdImageToDataUrl(image);
 }
 
 const FALLBACK_MODEL = 'onnx-community/gemma-3-270m-it-ONNX';
@@ -3261,50 +3080,11 @@ document.addEventListener('click', (e) => {
 // ======================================================================
 // Sending messages
 // ======================================================================
-async function sendImageGeneration(text, convo) {
-  input.value = '';
-  input.style.height = 'auto';
-  addMessage('user', text).textContent = text;
-  convo.messages.push({ role: 'user', content: text, ts: Date.now() });
-  if (convo.name === 'New chat') {
-    convo.name = text.length > 32 ? text.slice(0, 32) + '…' : text;
-    renderSidebar();
-  }
-
-  const bubble = addMessage('assistant', '');
-  bubble.textContent = 'Starting up…';
-  generating = true;
-  sendBtn.disabled = true;
-  imageGenToggle.classList.add('generating');
-  statusDot.classList.add('live');
-
-  try {
-    const dataUrl = await generateImage(text, (msg) => { bubble.textContent = msg; });
-    renderImageIntoBubble(bubble, dataUrl, text);
-    convo.messages.push({ role: 'assistant', content: '[Generated image]', imageDataUrl: dataUrl, imagePrompt: text, ts: Date.now() });
-    saveState();
-  } catch (err) {
-    console.error('[ImageGen] generation failed:', err);
-    bubble.textContent = "Couldn't generate that image: " + ((err && err.message) ? err.message : err);
-  } finally {
-    generating = false;
-    sendBtn.disabled = !(imageGenMode || engine || cpuGenerator);
-    imageGenToggle.classList.remove('generating');
-    statusDot.classList.remove('live');
-    input.focus();
-  }
-}
-
 async function send() {
   const text = input.value.trim();
   if (!text || generating) return;
   const convo = getActiveConversation();
   if (!convo) return;
-
-  if (imageGenMode) {
-    await sendImageGeneration(text, convo);
-    return;
-  }
 
   if (engineMode === 'webgpu' && !engine) return;
   if (engineMode === 'cpu' && !cpuGenerator) return;
