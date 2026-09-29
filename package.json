@@ -1,0 +1,14 @@
+{
+  "name": "potatopowered-tests",
+  "private": true,
+  "description": "Dev-only test tooling for PotatoPowered. Nothing in here is deployed — the live app is still just index.html, served as-is by GitHub Pages.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:unit": "playwright test tests/unit",
+    "test:e2e": "playwright test tests/e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}
